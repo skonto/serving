@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
+	"github.com/prometheus/common/log"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -82,6 +83,7 @@ func (c *Reconciler) reconcileDigest(ctx context.Context, rev *v1.Revision) (boo
 	// The image digest has already been resolved.
 	if len(rev.Status.ContainerStatuses) == len(rev.Spec.Containers) {
 		c.resolver.Clear(types.NamespacedName{Namespace: rev.Namespace, Name: rev.Name})
+		log.Info("The image digest has already been resolved.")
 		return true, nil
 	}
 
@@ -96,12 +98,14 @@ func (c *Reconciler) reconcileDigest(ctx context.Context, rev *v1.Revision) (boo
 		ImagePullSecrets:   imagePullSecrets,
 	}
 
+	log.Info("BEFORE RESOLVE")
 	statuses, err := c.resolver.Resolve(rev, opt, cfgs.Deployment.RegistriesSkippingTagResolving, cfgs.Deployment.DigestResolutionTimeout)
 	if err != nil {
 		// Clear the resolver so we can retry the digest resolution rather than
 		// being stuck with this error.
 		c.resolver.Clear(types.NamespacedName{Namespace: rev.Namespace, Name: rev.Name})
 		rev.Status.MarkContainerHealthyFalse(v1.ReasonContainerMissing, err.Error())
+		log.Infof("CONTAINER IS MISSING: %V", err)
 		return true, err
 	}
 	if len(statuses) > 0 {
@@ -114,6 +118,7 @@ func (c *Reconciler) reconcileDigest(ctx context.Context, rev *v1.Revision) (boo
 			}
 		}
 
+		log.Infof("CONTAINER statuses: %V", statuses)
 		return true, nil
 	}
 
@@ -128,13 +133,16 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, rev *v1.Revision) pkgrec
 
 	reconciled, err := c.reconcileDigest(ctx, rev)
 	if err != nil {
+		log.Infof("FAILED TO RECONCILE DIGESTS: %v", err)
 		return err
 	}
 	if !reconciled {
 		// Digest not resolved yet, wait for background resolution to re-enqueue the revision.
+		log.Infof("FAILED TO RECONCILE DIGESTS WAITING FOR BACKGROUND")
 		rev.Status.MarkResourcesAvailableUnknown(v1.ReasonResolvingDigests, "")
 		return nil
 	}
+	log.Infof("HEREERERERERERERE")
 
 	for _, phase := range []func(context.Context, *v1.Revision) error{
 		c.reconcileDeployment,
@@ -142,6 +150,7 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, rev *v1.Revision) pkgrec
 		c.reconcilePA,
 	} {
 		if err := phase(ctx, rev); err != nil {
+			log.Infof("FAILED STAGE: %v", err)
 			return err
 		}
 	}

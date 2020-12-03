@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"sort"
 	"sync"
+	"log"
 
 	"k8s.io/klog"
 )
@@ -60,10 +61,12 @@ func NewDockerKeyring() DockerKeyring {
 
 	for _, key := range stringKeys {
 		provider := providers[key]
+		log.Printf("PROVIDER 1: %v -%v", provider, key)
 		if provider.Enabled() {
 			klog.V(4).Infof("Registering credential provider: %v", key)
 			keyring.Providers = append(keyring.Providers, provider)
 		}
+		log.Printf("PROVIDER 2: %v -%v", provider, key)
 	}
 
 	return keyring

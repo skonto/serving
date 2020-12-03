@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"log"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/klog"
@@ -212,6 +213,7 @@ func (g *containerRegistryProvider) Enabled() bool {
 	if !onGCEVM() {
 		return false
 	}
+	log.Print("GCP ENABLED 1")
 	// Given that we are on GCE, we should keep retrying until the metadata server responds.
 	value := runWithBackoff(func() ([]byte, error) {
 		value, err := credentialprovider.ReadUrl(serviceAccounts, g.Client, metadataHeader)
@@ -220,6 +222,7 @@ func (g *containerRegistryProvider) Enabled() bool {
 		}
 		return value, err
 	})
+	log.Print("GCP ENABLED 2")
 	// We expect the service account to return a list of account directories separated by newlines, e.g.,
 	//   sv-account-name1/
 	//   sv-account-name2/
@@ -231,6 +234,7 @@ func (g *containerRegistryProvider) Enabled() bool {
 			break
 		}
 	}
+	log.Print("ENABLED 3")
 	if !defaultServiceAccountExists {
 		klog.V(2).Infof("'default' service account does not exist. Found following service accounts: %q", string(value))
 		return false
@@ -248,6 +252,7 @@ func (g *containerRegistryProvider) Enabled() bool {
 		klog.Errorf("Failed to unmarshal scopes: %v", err)
 		return false
 	}
+	log.Print("ENABLED 4")
 	for _, v := range scopes {
 		// cloudPlatformScope implies storage scope.
 		if strings.HasPrefix(v, storageScopePrefix) || strings.HasPrefix(v, cloudPlatformScopePrefix) {

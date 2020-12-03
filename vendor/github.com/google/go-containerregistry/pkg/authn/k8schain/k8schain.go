@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"log"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -67,8 +68,10 @@ func New(ctx context.Context, client kubernetes.Interface, opt Options) (authn.K
 
 	// First, fetch all of the explicitly declared pull secrets
 	var pullSecrets []v1.Secret
+	log.Print("START NEW")
 	if client != nil {
 		for _, name := range opt.ImagePullSecrets {
+			log.Print("IMAGE SECRETS FETCHING")
 			ps, err := client.CoreV1().Secrets(opt.Namespace).Get(ctx, name, metav1.GetOptions{})
 			if err != nil {
 				return nil, err
@@ -76,13 +79,18 @@ func New(ctx context.Context, client kubernetes.Interface, opt Options) (authn.K
 			pullSecrets = append(pullSecrets, *ps)
 		}
 
+		log.Print("START NEW 1")
 		// Second, fetch all of the pull secrets attached to our service account.
 		sa, err := client.CoreV1().ServiceAccounts(opt.Namespace).Get(ctx, opt.ServiceAccountName, metav1.GetOptions{})
+		log.Print("START NEW 2")
 		if err != nil {
+			log.Printf("START NEW 2-err: %v", err)
 			return nil, err
 		}
 		for _, localObj := range sa.ImagePullSecrets {
+			log.Print("SA SECRETS FETCHING 1")
 			ps, err := client.CoreV1().Secrets(opt.Namespace).Get(ctx, localObj.Name, metav1.GetOptions{})
+			log.Print("SA SECRETS FETCHING 2")
 			if err != nil {
 				return nil, err
 			}
@@ -90,12 +98,16 @@ func New(ctx context.Context, client kubernetes.Interface, opt Options) (authn.K
 		}
 	}
 
+	log.Print("PULL SECRETS FETCHED")
 	once.Do(func() {
+		log.Print("NEWDOCKERKEY 1")
 		keyring = credentialprovider.NewDockerKeyring()
+		log.Print("NEWDOCKERKEY 2")
 	})
-
+	log.Print("DONE ONCE")
 	// Third, extend the default keyring with the pull secrets.
 	kr, err := credentialprovidersecrets.MakeDockerKeyring(pullSecrets, keyring)
+	log.Print("MakeDockerKeyring")
 	if err != nil {
 		return nil, err
 	}

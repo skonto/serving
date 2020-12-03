@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -69,14 +70,17 @@ func (p *ecrProvider) Enabled() bool {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	})
+	log.Print("ENABLED AWS 1")
 	if err != nil {
 		klog.Errorf("while validating AWS credentials %v", err)
 		return false
 	}
+	log.Print("ENABLED AWS 2")
 	if _, err := sess.Config.Credentials.Get(); err != nil {
 		klog.Errorf("while getting AWS credentials %v", err)
 		return false
 	}
+	log.Print("ENABLED AWS 3")
 	return true
 }
 

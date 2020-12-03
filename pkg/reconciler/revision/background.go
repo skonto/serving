@@ -150,11 +150,13 @@ func (r *backgroundResolver) Resolve(rev *v1.Revision, opt k8schain.Options, reg
 
 	result, inFlight := r.results[name]
 	if !inFlight {
+		r.logger.Info("ADDING WORK ITEMS")
 		r.addWorkItems(rev, name, opt, registriesToSkip, timeout)
 		return nil, nil
 	}
 
 	if !result.ready() {
+		r.logger.Info("RESULT NOT READY")
 		return nil, nil
 	}
 
@@ -197,7 +199,10 @@ func (r *backgroundResolver) processWorkItem(item *workItem) {
 	ctx, cancel := context.WithTimeout(context.Background(), item.timeout)
 	defer cancel()
 
+	r.logger.Info("PROCESSING WORK ITEM")
 	resolvedDigest, resolveErr := r.resolver.Resolve(ctx, item.image, item.result.opt, item.result.registriesToSkip)
+
+	r.logger.Infof("RESOLVED %v", resolvedDigest)
 
 	// lock after the resolve because we don't want to block parallel resolves,
 	// just storing the result.
@@ -208,6 +213,7 @@ func (r *backgroundResolver) processWorkItem(item *workItem) {
 	// This can happen if an image resolve completes but we've already reported
 	// an error from another image in the result.
 	if item.result.ready() {
+		r.logger.Infof("READY")
 		return
 	}
 
@@ -215,6 +221,7 @@ func (r *backgroundResolver) processWorkItem(item *workItem) {
 		item.result.statuses = nil
 		item.result.err = fmt.Errorf("%s: %w", v1.RevisionContainerMissingMessage(item.image, "failed to resolve image to digest"), resolveErr)
 		item.result.completionCallback()
+		r.logger.Infof("FAILED DIGEST")
 		return
 	}
 

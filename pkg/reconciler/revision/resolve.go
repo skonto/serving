@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/prometheus/common/log"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 )
@@ -76,27 +77,34 @@ func (r *digestResolver) Resolve(
 	image string,
 	opt k8schain.Options,
 	registriesToSkip sets.String) (string, error) {
+	log.Info("BEFORE CHAIN NEW")
 	kc, err := k8schain.New(ctx, r.client, opt)
+	log.Info("AFTER CHAIN NEW")
 	if err != nil {
+		log.Errorf("failed to initialize authentication: %v", err)
 		return "", fmt.Errorf("failed to initialize authentication: %w", err)
 	}
 
 	if _, err := name.NewDigest(image, name.WeakValidation); err == nil {
 		// Already a digest
+		log.Error("ALREADY a digest")
 		return image, nil
 	}
 
 	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
+		log.Error("FAILED PARSE")
 		return "", fmt.Errorf("failed to parse image name %q into a tag: %w", image, err)
 	}
 
 	if registriesToSkip.Has(tag.Registry.RegistryStr()) {
+		log.Error("SKIIIP")
 		return "", nil
 	}
 
 	desc, err := remote.Head(tag, remote.WithContext(ctx), remote.WithTransport(r.transport), remote.WithAuthFromKeychain(kc))
 	if err != nil {
+		log.Errorf("remote HEAD: %v", err)
 		return "", err
 	}
 	return fmt.Sprintf("%s@%s", tag.Repository.String(), desc.Digest), nil
