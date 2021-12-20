@@ -190,10 +190,9 @@ function install_catalogsource(){
   # And checkout the setup script based on that commit.
   local SERVERLESS_DIR=$(mktemp -d)
   local CURRENT_DIR=$(pwd)
-  git clone --depth 1 https://github.com/openshift-knative/serverless-operator.git ${SERVERLESS_DIR}
+  git clone --depth 1 --branch release-1.20 https://github.com/openshift-knative/serverless-operator.git ${SERVERLESS_DIR}
   pushd ${SERVERLESS_DIR}
 
-  git checkout release-1.20
   source ./test/lib.bash
   create_namespaces
   update_csv $CURRENT_DIR || return $?
