@@ -248,8 +248,6 @@ EOF
 }
 
 function create_configmaps(){
-  sed -i -e  "s|policy/v1|policy/v1beta1|g" openshift/release/knative-serving-ci.yaml
-
   # Create configmap to use the latest manifest.
   oc create configmap ko-data-serving -n $OPERATORS_NAMESPACE --from-file="openshift/release/knative-serving-ci.yaml" || return $?
 
