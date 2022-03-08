@@ -43,3 +43,5 @@ require (
 	knative.dev/pkg v0.0.0-20220301181942-2fdd5f232e77
 	sigs.k8s.io/yaml v1.3.0
 )
+
+replace knative.dev/pkg => github.com/skonto/pkg v0.0.0-20220308103705-81e70b43a722

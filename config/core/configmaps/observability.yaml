@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/version: devel
     serving.knative.dev/release: devel
   annotations:
-    knative.dev/example-checksum: "fed4756e"
+    knative.dev/example-checksum: "17bac7d7"
 data:
   _example: |
     ################################
@@ -100,6 +100,10 @@ data:
     # destination. It enables queue proxy to send request metrics.
     # Currently supported values: prometheus (the default), opencensus.
     metrics.request-metrics-backend-destination: prometheus
+
+    # metrics.request-metrics-reporting-period-seconds specifies the reporting
+    # period in seconds for the queue proxy metrics exporter.
+    metrics.request-metrics-reporting-period-seconds: 10
 
     # profiling.enable indicates whether it is allowed to retrieve runtime profiling data from
     # the pods via an HTTP server in the format expected by the pprof visualization tool. When

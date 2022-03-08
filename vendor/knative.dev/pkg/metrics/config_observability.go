@@ -35,6 +35,9 @@ const (
 	// The following is used to set the default metrics backend
 	defaultRequestMetricsBackend = "prometheus"
 
+	// The default request metrics reporting period
+	defaultRequestReportingPeriodSeconds = 10
+
 	// The env var name for config-observability
 	configMapNameEnv = "CONFIG_OBSERVABILITY_NAME"
 
@@ -69,6 +72,10 @@ type ObservabilityConfig struct {
 	// OpenCensus. "None" disables all backends.
 	RequestMetricsBackend string
 
+	// RequestMetricsReportingPeriodSeconds specifies the request metrics reporting period in sec at queue proxy, eg 1.
+	// If a zero or negative value is passed the default reporting period is used (10 secs).
+	RequestMetricsReportingPeriodSeconds int
+
 	// EnableProfiling indicates whether it is allowed to retrieve runtime profiling data from
 	// the pods via an HTTP server in the format expected by the pprof visualization tool.
 	EnableProfiling bool
@@ -83,9 +90,10 @@ type ObservabilityConfig struct {
 
 func defaultConfig() *ObservabilityConfig {
 	return &ObservabilityConfig{
-		LoggingURLTemplate:    DefaultLogURLTemplate,
-		RequestLogTemplate:    DefaultRequestLogTemplate,
-		RequestMetricsBackend: defaultRequestMetricsBackend,
+		LoggingURLTemplate:                   DefaultLogURLTemplate,
+		RequestLogTemplate:                   DefaultRequestLogTemplate,
+		RequestMetricsBackend:                defaultRequestMetricsBackend,
+		RequestMetricsReportingPeriodSeconds: defaultRequestReportingPeriodSeconds,
 	}
 }
 
@@ -100,6 +108,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		cm.AsBool(EnableReqLogKey, &oc.EnableRequestLog),
 		cm.AsBool(EnableProbeReqLogKey, &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
+		cm.AsInt("metrics.request-metrics-reporting-period-seconds", &oc.RequestMetricsReportingPeriodSeconds),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),
 		cm.AsString("metrics.opencensus-address", &oc.MetricsCollectorAddress),
 	); err != nil {

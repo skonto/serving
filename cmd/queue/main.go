@@ -89,6 +89,7 @@ type config struct {
 	ServingPod                   string `split_words:"true" required:"true"`
 	ServingService               string `split_words:"true"` // optional
 	ServingRequestMetricsBackend string `split_words:"true"` // optional
+	ServingRequestMetricsReportingPeriodSeconds string `split_words:"true"` // optional
 	MetricsCollectorAddress      string `split_words:"true"` // optional
 
 	// Tracing configuration
@@ -339,7 +340,7 @@ func supportsMetrics(ctx context.Context, logger *zap.SugaredLogger, env config)
 		return false
 	}
 
-	if err := setupMetricsExporter(ctx, logger, env.ServingRequestMetricsBackend, env.MetricsCollectorAddress); err != nil {
+	if err := setupMetricsExporter(ctx, logger, env.ServingRequestMetricsBackend, env.MetricsCollectorAddress, env.ServingRequestMetricsReportingPeriodSeconds); err != nil {
 		logger.Errorw("Error setting up request metrics exporter. Request metrics will be unavailable.", zap.Error(err))
 		return false
 	}
@@ -407,7 +408,7 @@ func requestAppMetricsHandler(logger *zap.SugaredLogger, currentHandler http.Han
 	return h
 }
 
-func setupMetricsExporter(ctx context.Context, logger *zap.SugaredLogger, backend string, collectorAddress string) error {
+func setupMetricsExporter(ctx context.Context, logger *zap.SugaredLogger, backend string, collectorAddress string, reportingPeriod string) error {
 	// Set up OpenCensus exporter.
 	// NOTE: We use revision as the component instead of queue because queue is
 	// implementation specific. The current metrics are request relative. Using
@@ -421,6 +422,7 @@ func setupMetricsExporter(ctx context.Context, logger *zap.SugaredLogger, backen
 		ConfigMap: map[string]string{
 			metrics.BackendDestinationKey: backend,
 			"metrics.opencensus-address":  collectorAddress,
+			"metrics.reporting-period-seconds": reportingPeriod,
 		},
 	}
 	return metrics.UpdateExporter(ctx, ops, logger)

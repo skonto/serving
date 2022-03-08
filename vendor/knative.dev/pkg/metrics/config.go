@@ -41,7 +41,7 @@ const (
 	DomainEnv = "METRICS_DOMAIN"
 
 	// The following keys are used to configure metrics reporting.
-	// See https://github.com/knative/serving/blob/main/config/config-observability.yaml
+	// See https://github.com/knative/serving/blob/main/config/core/configmaps/observability.yaml
 	// for details.
 	collectorAddressKey = "metrics.opencensus-address"
 	collectorSecureKey  = "metrics.opencensus-require-tls"
