@@ -385,6 +385,7 @@ function run_e2e_tests(){
   go_test_e2e -timeout=5m ./test/e2e/pvc \
     --kubeconfig "$KUBECONFIG" \
     --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+    --enable-alpha \
     --https \
     --skip-cleanup-on-fail \
     --resolvabledomain || failed=1
