@@ -299,6 +299,9 @@ function run_e2e_tests(){
   sleep 30
   subdomain=$(oc get ingresses.config.openshift.io cluster  -o jsonpath="{.spec.domain}")
 
+  # Apply resource quota in rq-test namespace, needed for the related e2e test.
+  oc apply -f ./test/config/resource-quota/resource-quota.yaml
+
   if [ -n "$test_name" ]; then
     oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-volumes-emptydir": "enabled"}}}}' || fail_test
     go_test_e2e -tags=e2e -timeout=15m -parallel=1 \
