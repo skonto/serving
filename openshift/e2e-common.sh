@@ -262,6 +262,9 @@ function prepare_knative_serving_tests_nightly {
   kubectl apply -f test/config/cluster-resources.yaml
   kubectl apply -f test/config/test-resources.yaml
 
+  # Apply resource quota in rq-test namespace, needed for the related e2e test.
+  oc apply -f ./test/config/resource-quota/resource-quota.yaml
+
   oc adm policy add-scc-to-user privileged -z default -n serving-tests
   oc adm policy add-scc-to-user privileged -z default -n serving-tests-alt
   # Adding scc for anyuid to test TestShouldRunAsUserContainerDefault.
@@ -298,9 +301,6 @@ function run_e2e_tests(){
   # Give the controller time to sync with the rest of the system components.
   sleep 30
   subdomain=$(oc get ingresses.config.openshift.io cluster  -o jsonpath="{.spec.domain}")
-
-  # Apply resource quota in rq-test namespace, needed for the related e2e test.
-  oc apply -f ./test/config/resource-quota/resource-quota.yaml
 
   if [ -n "$test_name" ]; then
     oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-volumes-emptydir": "enabled"}}}}' || fail_test
