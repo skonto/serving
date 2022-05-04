@@ -21,15 +21,24 @@ package pvc
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strconv"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/ptr"
 	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/spoof"
+	"knative.dev/serving/pkg/apis/autoscaling"
+	v1 "knative.dev/serving/pkg/apis/serving/v1"
 	. "knative.dev/serving/pkg/testing/v1"
 	"knative.dev/serving/test"
 	v1test "knative.dev/serving/test/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/serving/pkg/resources"
 )
 
 const (
@@ -65,9 +74,14 @@ func TestPersistentVolumeClaims(t *testing.T) {
 		FSGroup: ptr.Int64(unprivilegedUserID),
 	})
 
-	resources, err := v1test.CreateServiceReady(t, clients, &names, withVolume, withPodSecurityContext)
+	resources, err := v1test.CreateServiceReady(t, clients, &names, withVolume, withPodSecurityContext, withMinScale(3))
 	if err != nil {
 		t.Fatalf("Failed to create initial Service: %v: %v", names.Service, err)
+	}
+
+	t.Log("Holding service at minScale after becoming ready")
+	if lr, ok := ensureDesiredScale(clients, t, names.Service, gte(3)); !ok {
+		t.Fatalf("The service %q observed scale %d < %d after becoming ready", names.Service, lr, 3)
 	}
 
 	url := resources.Route.Status.URL.URL()
@@ -83,4 +97,42 @@ func TestPersistentVolumeClaims(t *testing.T) {
 	); err != nil {
 		t.Fatalf("The endpoint %s for Route %s didn't serve the expected text %q: %v", url, names.Route, test.EmptyDirText, err)
 	}
+}
+
+func withMinScale(minScale int) func(cfg *v1.Service) {
+	return func(svc *v1.Service) {
+		if svc.Spec.Template.Annotations == nil {
+			svc.Spec.Template.Annotations = make(map[string]string, 1)
+		}
+		svc.Spec.Template.Annotations[autoscaling.MinScaleAnnotationKey] = strconv.Itoa(minScale)
+	}
+}
+
+
+func gte(m int) func(int) bool {
+	return func(n int) bool {
+		return n >= m
+	}
+}
+
+func ensureDesiredScale(clients *test.Clients, t *testing.T, serviceName string, cond func(int) bool) (latestReady int, observed bool) {
+	endpoints := clients.KubeClient.CoreV1().Endpoints(test.ServingFlags.TestNamespace)
+
+	err := wait.PollImmediate(250*time.Millisecond, 300*time.Second, func() (bool, error) {
+		endpoint, err := endpoints.Get(context.Background(), serviceName, metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		if latestReady = resources.ReadyAddressCount(endpoint); !cond(latestReady) {
+			return false, fmt.Errorf("scale %d didn't meet condition", latestReady)
+		}
+
+		return false, nil
+	})
+	if !errors.Is(err, wait.ErrWaitTimeout) {
+		t.Log("PollError =", err)
+	}
+
+	return latestReady, errors.Is(err, wait.ErrWaitTimeout)
 }
