@@ -179,8 +179,7 @@ function install_catalogsource(){
   # And checkout the setup script based on that commit.
   local SERVERLESS_DIR=$(mktemp -d)
   local CURRENT_DIR=$(pwd)
-  git clone --branch override_env_via_injection_net --depth 1 https://github.com/skonto/serverless-operator.git ${SERVERLESS_DIR}
-
+  git clone --depth 1 https://github.com/openshift-knative/serverless-operator.git ${SERVERLESS_DIR}
   pushd ${SERVERLESS_DIR}
 
   source ./test/lib.bash
