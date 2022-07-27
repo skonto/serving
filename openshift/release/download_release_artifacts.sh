@@ -41,6 +41,10 @@ function download_serving {
 
 download_serving serving "$1" "${serving_files[@]}"
 
+sed -i "s/REPLACE_VERSION/${release_suffix:1}/g" "${manifest_path}/001-serving-namespace-deletion.patch"
+sed -i "s/REPLACE_VERSION/${release_suffix:1}/g" "${manifest_path}/002-openshift-serving-role.patch"
+sed -i "s/REPLACE_VERSION/${release_suffix:1}/g" "${manifest_path}/003-serving-pdb.patch"
+
 # Drop namespace from manifest.
 git apply "${manifest_path}/001-serving-namespace-deletion.patch"
 
