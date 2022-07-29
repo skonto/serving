@@ -867,7 +867,7 @@ func TestMakeIngressRuleVanilla(t *testing.T) {
 	}
 	ro := tc.BuildRollout()
 	rule := makeIngressRule(domains, ns,
-		netv1alpha1.IngressVisibilityExternalIP, targets, ro.RolloutsByTag(traffic.DefaultTarget), "" /* activatorCA */)
+		netv1alpha1.IngressVisibilityExternalIP, targets, ro.RolloutsByTag(traffic.DefaultTarget), false /* internal encryption */)
 	expected := netv1alpha1.IngressRule{
 		Hosts: []string{
 			"a.com",
@@ -920,7 +920,7 @@ func TestMakeIngressRuleZeroPercentTarget(t *testing.T) {
 	}
 	ro := tc.BuildRollout()
 	rule := makeIngressRule(domains, ns,
-		netv1alpha1.IngressVisibilityExternalIP, targets, ro.RolloutsByTag(traffic.DefaultTarget), "" /* activatorCA */)
+		netv1alpha1.IngressVisibilityExternalIP, targets, ro.RolloutsByTag(traffic.DefaultTarget), false /* internal encryption */)
 	expected := netv1alpha1.IngressRule{
 		Hosts: []string{"test.org"},
 		HTTP: &netv1alpha1.HTTPIngressRuleValue{
@@ -970,7 +970,7 @@ func TestMakeIngressRuleTwoTargets(t *testing.T) {
 	ro := tc.BuildRollout()
 	domains := []string{"test.org"}
 	rule := makeIngressRule(domains, ns, netv1alpha1.IngressVisibilityExternalIP,
-		targets, ro.RolloutsByTag("a-tag"), "" /* activatorCA */)
+		targets, ro.RolloutsByTag("a-tag"), false /* internal encryption */)
 	expected := netv1alpha1.IngressRule{
 		Hosts: []string{"test.org"},
 		HTTP: &netv1alpha1.HTTPIngressRuleValue{
@@ -1425,7 +1425,6 @@ func testContextWithHTTPOption() context.Context {
 
 func testContextWithActivatorCA() context.Context {
 	cfg := testConfig()
-	cfg.Network.ActivatorCA = "ca-ame"
-	cfg.Network.ActivatorSAN = "san-name"
+	cfg.Network.InternalEncryption = true
 	return config.ToContext(context.Background(), cfg)
 }

@@ -42,6 +42,7 @@ import (
 	"knative.dev/serving/pkg/metrics"
 
 	networkingclient "knative.dev/networking/pkg/client/injection/client"
+	netcfg "knative.dev/networking/pkg/config"
 	filteredinformerfactory "knative.dev/pkg/client/injection/kube/informers/factory/filtered"
 	servingclient "knative.dev/serving/pkg/client/injection/client"
 	"knative.dev/serving/pkg/client/injection/ducks/autoscaling/v1alpha1/podscalable"
@@ -126,10 +127,9 @@ func initialScaleZeroASConfig() *autoscalerconfig.Config {
 	return ac
 }
 
-func activatorCertsNetConfig() *netpkg.Config {
-	nc, _ := netpkg.NewConfigFromMap(map[string]string{
-		netpkg.ActivatorCAKey:  "knative-ca",
-		netpkg.ActivatorSANKey: "knative-san",
+func activatorCertsNetConfig() *netcfg.Config {
+	nc, _ := netcfg.NewConfigFromMap(map[string]string{
+		netcfg.InternalEncryptionKey: "true",
 	})
 	return nc
 }
@@ -140,9 +140,8 @@ func defaultConfig() *config.Config {
 		deployment.QueueSidecarImageKey: "bob",
 		deployment.ProgressDeadlineKey:  progressDeadline.String(),
 	})
-	networkConfig, _ := netpkg.NewConfigFromMap(map[string]string{
-		netpkg.ActivatorCAKey:  "",
-		netpkg.ActivatorSANKey: "",
+	networkConfig, _ := netcfg.NewConfigFromMap(map[string]string{
+		netcfg.InternalEncryptionKey: "false",
 	})
 
 	return &config.Config{

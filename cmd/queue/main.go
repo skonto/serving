@@ -33,6 +33,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
+	"knative.dev/control-protocol/pkg/certificates"
 	network "knative.dev/networking/pkg"
 	pkglogging "knative.dev/pkg/logging"
 	"knative.dev/pkg/logging/logkey"
@@ -64,10 +65,10 @@ const (
 	drainSleepDuration = 30 * time.Second
 
 	// certPath is the path for the server certificate mounted by queue-proxy.
-	certPath = queue.CertDirectory + "/tls.crt"
+	certPath = queue.CertDirectory + "/" + certificates.SecretCertKey
 
 	// keyPath is the path for the server certificate key mounted by queue-proxy.
-	keyPath = queue.CertDirectory + "/tls.key"
+	keyPath = queue.CertDirectory + "/" + certificates.SecretPKKey
 )
 
 type config struct {
