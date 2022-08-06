@@ -1,5 +1,5 @@
 diff --git a/openshift/release/artifacts/2-serving-core.yaml b/openshift/release/artifacts/2-serving-core.yaml
-index 12cac6d40..0bd375e60 100644
+index 12cac6d40..ccee9372b 100644
 --- a/openshift/release/artifacts/2-serving-core.yaml
 +++ b/openshift/release/artifacts/2-serving-core.yaml
 @@ -4440,6 +4440,39 @@ data:
@@ -42,6 +42,15 @@ index 12cac6d40..0bd375e60 100644
  ---
  # Copyright 2018 The Knative Authors
  #
+@@ -4465,7 +4498,7 @@ metadata:
+     app.kubernetes.io/component: networking
+     app.kubernetes.io/version: "1.4.0"
+   annotations:
+-    knative.dev/example-checksum: "d0b91f80"
++    knative.dev/example-checksum: "73d96d1b"
+ data:
+   _example: |
+     ################################
 @@ -4616,53 +4649,15 @@ data:
      # Knative doesn't know about that otherwise.
      default-external-scheme: "http"
@@ -99,6 +108,6 @@ index 12cac6d40..0bd375e60 100644
      #       for now. Use with caution.
 -    queue-proxy-cert-secret: ""
 +    internal-encryption: "false"
-
+ 
  ---
  # Copyright 2018 The Knative Authors
