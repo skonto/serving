@@ -10,5 +10,8 @@ output_file="openshift/release/knative-serving-${release}.yaml"
 resolve_resources "config/core/ config/hpa-autoscaling/" "$output_file"
 
 if [[ "$release" != "ci" ]]; then
+  # Drop the "knative-" suffix, which is added in upstream branch.
+  # e.g. knative-v1.7.0 => v1.7.0
+  release=${release#"knative-"}
   ${root}/download_release_artifacts.sh $release
 fi
