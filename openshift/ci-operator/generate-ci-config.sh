@@ -150,10 +150,11 @@ EOF
   cron="$(generate_cron_expression)"
 
   print_single_test    "e2e-aws-ocp-${openshift//./}"             "make test-e2e"         "" "true" "generic-claim" ""
-
   if [[ "$internal_tls_enabled" == true ]]; then
-    print_single_test "e2e-aws-ocp-${openshift//./}-continuous"  "make test-e2e-tls"          "" "true" "generic-claim" "${cron}"
-  elif [[ "$generate_continuous" == true ]]; then
+    print_single_test "e2e-aws-ocp-tls-${openshift//./}"  "make test-e2e-tls"          "" "true" "generic-claim" "${cron}"
+  fi
+
+  if [[ "$generate_continuous" == true ]]; then
     print_single_test "e2e-aws-ocp-${openshift//./}-continuous"  "make test-e2e"          "" "true" "generic-claim" "${cron}"
   fi
 
