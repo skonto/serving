@@ -39,14 +39,13 @@ CONFIG=$CONFIGDIR/openshift-knative-serving-release-$VERSION
 PERIODIC_CONFIG=$PERIODIC_CONFIGDIR/openshift-knative-serving-release-$VERSION-periodics.yaml
 CURDIR=$(dirname $0)
 
-# $1=branch $2=openshift $3=promotion_disabled $4=generate_continuous
+# $1=branch $2=openshift $3=promotion_disabled $4=generate_continuous $5=internal_tls_enabled(optional)
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.6 true false > ${CONFIG}__46.yaml
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.7 true false > ${CONFIG}__47.yaml
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.8 true false > ${CONFIG}__48.yaml
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.9 true false > ${CONFIG}__49.yaml
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.10 true false > ${CONFIG}__410.yaml
-$CURDIR/generate-ci-config.sh knative-$VERSION 4.11 true false > ${CONFIG}__411-tls.yaml
-$CURDIR/generate-ci-config.sh knative-$VERSION 4.11 false true > ${CONFIG}__411.yaml
+$CURDIR/generate-ci-config.sh knative-$VERSION 4.11 true false true > ${CONFIG}__411-tls.yaml
 
 # Append missing lines to the mirror file.
 if [[ "$VERSION" != "next" ]]; then
