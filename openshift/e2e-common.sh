@@ -229,6 +229,23 @@ spec:
       logging.enable-request-log: "true"
 EOF
 
+  # TODO: Only one cluster enables internal-tls but it should be enabled by default when the feature is stable.
+  if [[ ${ENABLE_INTERNAL_TLS} == "true" ]]; then
+    oc patch knativeserving knative-serving \
+        -n "${SERVING_NAMESPACE}" \
+        --type merge --patch '{"spec": {"config": {"network": {"internal-encryption": "true"}}}}'
+    oc patch knativeserving knative-serving \
+        -n "${SERVING_NAMESPACE}" \
+        --type merge --patch '{"spec": {"config": {"kourier": {"cluster-cert-secret": "server-certs"}}}}'
+    # Deploy certificates for testing TLS with cluster-local gateway
+    timeout 600 '[[ $(oc get ns $SERVING_INGRESS_NAMESPACE -oname | wc -l) == 0 ]]' || return 1
+    yq read --doc 1 ./test/config/tls/cert-secret.yaml | sed "s/knative-serving/${SERVING_INGRESS_NAMESPACE}/" | oc apply -f -
+    echo "Restart activator to mount the certificates"
+    oc delete pod -n ${SERVING_NAMESPACE} -l app=activator
+    oc wait --timeout=60s --for=condition=Available deployment  -n ${SERVING_NAMESPACE} activator
+    echo "internal-encryption is enabled"
+  fi
+
   # Wait for 4 pods to appear first
   timeout 600 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 4 ]]' || return 1
   wait_until_pods_running $SERVING_NAMESPACE || return 1
@@ -269,6 +286,15 @@ function prepare_knative_serving_tests_nightly {
   export GATEWAY_OVERRIDE=kourier
   export GATEWAY_NAMESPACE_OVERRIDE="$SERVING_INGRESS_NAMESPACE"
   export INGRESS_CLASS=kourier.ingress.networking.knative.dev
+
+  if [[ ${ENABLE_INTERNAL_TLS} == "true" ]]; then
+    # Deploy CA cert for testing TLS with cluster-local gateway
+    yq read --doc 0 ./test/config/tls/cert-secret.yaml | oc apply -f -
+    # This needs to match the name of Secret in test/config/tls/cert-secret.yaml
+    export CA_CERT=ca-cert
+    # This needs to match $san from test/config/tls/generate.sh
+    export SERVER_NAME=knative.dev
+  fi
 }
 
 function run_e2e_tests(){
