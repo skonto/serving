@@ -4509,7 +4509,7 @@ metadata:
     app.kubernetes.io/component: networking
     app.kubernetes.io/version: "1.5.0"
   annotations:
-    knative.dev/example-checksum: "d0b91f80"
+    knative.dev/example-checksum: "73d96d1b"
 data:
   _example: |
     ################################
