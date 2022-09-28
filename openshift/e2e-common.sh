@@ -240,6 +240,10 @@ EOF
     # Deploy certificates for testing TLS with cluster-local gateway
     timeout 600 '[[ $(oc get ns $SERVING_INGRESS_NAMESPACE -oname | wc -l) == 0 ]]' || return 1
     yq read --doc 1 ./test/config/tls/cert-secret.yaml | yq write - metadata.namespace ${SERVING_INGRESS_NAMESPACE} | oc apply -f -
+    # Make sure that  autoscaler is up and activator can connect
+    # TODO:  This should be removed once we figure out why autoscaler leader election takes too long
+    # some times
+    sleep 60
     echo "Restart activator to mount the certificates"
     oc delete pod -n ${SERVING_NAMESPACE} -l app=activator
     oc wait --timeout=60s --for=condition=Available deployment  -n ${SERVING_NAMESPACE} activator
