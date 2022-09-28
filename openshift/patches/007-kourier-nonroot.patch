@@ -10,4 +10,4 @@ index 4cf93056b..3f266e34a 100644
 +            runAsNonRoot: true
              capabilities:
                drop:
-                 - all
+                 - ALL
