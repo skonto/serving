@@ -119,17 +119,17 @@ function update_csv(){
 
   cat << EOF | yq write --inplace --script - $CSV || return $?
 - command: update
-  path: spec.install.spec.deployments.(name==knative-operator).spec.template.spec.containers.(name==knative-operator).env[+]
+  path: spec.install.spec.deployments.(name==knative-operator-webhook).spec.template.spec.containers.(name==knative-operator).env[+]
   value:
     name: "KO_DATA_PATH"
     value: "/tmp/knative/"
 - command: update
-  path: spec.install.spec.deployments.(name==knative-operator).spec.template.spec.containers.(name==knative-operator).volumeMounts[+]
+  path: spec.install.spec.deployments.(name==knative-operator-webhook).spec.template.spec.containers.(name==knative-operator).volumeMounts[+]
   value:
     name: "serving-manifest"
     mountPath: "/tmp/knative/knative-serving/${SERVING_VERSION}"
 - command: update
-  path: spec.install.spec.deployments.(name==knative-operator).spec.template.spec.volumes[+]
+  path: spec.install.spec.deployments.(name==knative-operator-webhook).spec.template.spec.volumes[+]
   value:
     name: "serving-manifest"
     configMap:
@@ -139,12 +139,12 @@ function update_csv(){
           path: "knative-serving-ci.yaml"
 # eventing
 - command: update
-  path: spec.install.spec.deployments.(name==knative-operator).spec.template.spec.containers.(name==knative-operator).volumeMounts[+]
+  path: spec.install.spec.deployments.(name==knative-operator-webhook).spec.template.spec.containers.(name==knative-operator).volumeMounts[+]
   value:
     name: "eventing-manifest"
     mountPath: "/tmp/knative/knative-eventing/${EVENTING_VERSION}"
 - command: update
-  path: spec.install.spec.deployments.(name==knative-operator).spec.template.spec.volumes[+]
+  path: spec.install.spec.deployments.(name==knative-operator-webhook).spec.template.spec.volumes[+]
   value:
     name: "eventing-manifest"
     configMap:
@@ -154,12 +154,12 @@ function update_csv(){
           path: "knative-eventing-ci.yaml"
 # kourier
 - command: update
-  path: spec.install.spec.deployments.(name==knative-operator).spec.template.spec.containers.(name==knative-operator).volumeMounts[+]
+  path: spec.install.spec.deployments.(name==knative-operator-webhook).spec.template.spec.containers.(name==knative-operator).volumeMounts[+]
   value:
     name: "kourier-manifest"
     mountPath: "/tmp/knative/ingress/${KOURIER_MINOR_VERSION}"
 - command: update
-  path: spec.install.spec.deployments.(name==knative-operator).spec.template.spec.volumes[+]
+  path: spec.install.spec.deployments.(name==knative-operator-webhook).spec.template.spec.volumes[+]
   value:
     name: "kourier-manifest"
     configMap:
