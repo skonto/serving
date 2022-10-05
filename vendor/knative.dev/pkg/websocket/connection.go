@@ -132,7 +132,7 @@ func NewDurableConnection(target string, messageChan chan []byte, logger *zap.Su
 		dialer := &websocket.Dialer{
 			// This needs to be relatively short to avoid the connection getting blackholed for a long time
 			// by restarting the serving side of the connection behind a Kubernetes Service.
-			HandshakeTimeout: 3 * time.Second,
+			HandshakeTimeout: 10 * time.Second,
 		}
 		conn, resp, err := dialer.Dial(target, nil)
 		if err != nil {
