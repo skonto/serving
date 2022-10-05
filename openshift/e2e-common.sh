@@ -186,7 +186,6 @@ function install_catalogsource(){
   create_namespaces "${SYSTEM_NAMESPACES[@]}"
   export GOPATH=/tmp/go
   OPENSHIFT_CI="true" make generated-files || return $?
-  sed -i "s/internal-encryption: \"true\"/internal-encryption: \"false\"/g" ./test/v1alpha1/resources/operator.knative.dev_v1alpha1_knativeserving_cr.yaml
   update_csv $CURRENT_DIR || return $?
   # Make OPENSHIFT_CI non-empty to build the serverless index and use S-O nightly build images.
   OPENSHIFT_CI="true" ensure_catalogsource_installed || return $?
