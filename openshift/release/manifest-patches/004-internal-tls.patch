@@ -102,3 +102,17 @@ index 12cac6d40..0bd375e60 100644
 
  ---
  # Copyright 2018 The Knative Authors
+
+diff --git a/openshift/release/artifacts/2-serving-core.yaml b/openshift/release/artifacts/2-serving-core.yaml
+index abe895e01..aff25f619 100644
+--- a/openshift/release/artifacts/2-serving-core.yaml
++++ b/openshift/release/artifacts/2-serving-core.yaml
+@@ -4509,7 +4509,7 @@ metadata:
+     app.kubernetes.io/component: networking
+     app.kubernetes.io/version: "1.5.0"
+   annotations:
+-    knative.dev/example-checksum: "d0b91f80"
++    knative.dev/example-checksum: "73d96d1b"
+ data:
+   _example: |
+     ################################
