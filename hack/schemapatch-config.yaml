@@ -160,6 +160,7 @@ k8s.io/api/core/v1.PodSecurityContext:
 k8s.io/api/core/v1.SecurityContext:
   preserveUnknownFields: true # for feature flagged fields
   allowedFields:
+    - AllowPrivilegeEscalation
     - RunAsUser
     - ReadOnlyRootFilesystem
     - Capabilities
