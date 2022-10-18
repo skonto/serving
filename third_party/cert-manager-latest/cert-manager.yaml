@@ -5165,8 +5165,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-            seccompProfile:
-              type: RuntimeDefault
 
       nodeSelector:
         kubernetes.io/os: linux
@@ -5226,8 +5224,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-            seccompProfile:
-              type: RuntimeDefault
           env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -5308,8 +5304,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-            seccompProfile:
-              type: RuntimeDefault
           env:
           - name: POD_NAMESPACE
             valueFrom:

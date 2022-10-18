@@ -4240,8 +4240,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-            seccompProfile:
-              type: RuntimeDefault
       restartPolicy: Never
       serviceAccountName: contour-certgen
       securityContext:
@@ -4383,8 +4381,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-            seccompProfile:
-              type: RuntimeDefault
       dnsPolicy: ClusterFirst
       serviceAccountName: contour
       securityContext:

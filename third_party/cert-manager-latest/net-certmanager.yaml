@@ -217,8 +217,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
             - name: metrics
               containerPort: 9090
@@ -323,8 +321,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
             - name: metrics
               containerPort: 9090
