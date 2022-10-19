@@ -56,3 +56,6 @@ git apply "${manifest_path}/004-internal-tls.patch"
 
 # Add psp patch.
 git apply "${manifest_path}/005-psp.patch"
+
+# Add secret informer filtering patch
+git apply "${manifest_path}/005-secret-informer.patch"
