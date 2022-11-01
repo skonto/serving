@@ -3525,7 +3525,6 @@ metadata:
   namespace: knative-serving
   labels:
     serving-certs-ctrl: "data-plane"
-    networking.internal.knative.dev/certificate-uid: "data-plane"
 # The data is populated when internal-encryption is enabled.
 ---
 # Copyright 2018 The Knative Authors
