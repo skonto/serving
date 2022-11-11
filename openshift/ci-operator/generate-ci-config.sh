@@ -44,28 +44,26 @@ EOF
 }
 
 function generate_cron_expression {
-  if [[ "$branch" == "knative-v0.25.3" ]]; then
-    echo '0 1 * * 1-5'
-  elif [[ "$branch" == "knative-v0.26" ]]; then
-    echo '0 3 * * 1-5'
-  elif [[ "$branch" == "knative-v1.0" ]]; then
-    echo '0 5 * * 1-5'
-  elif [[ "$branch" == "knative-v1.1" ]]; then
-    echo '0 7 * * 1-5'
-  elif [[ "$branch" == "knative-v1.2" ]]; then
-    echo '0 9 * * 1-5'
-  elif [[ "$branch" == "knative-v1.3" ]]; then
-    echo '0 11 * * 1-5'
-  elif [[ "$branch" == "knative-v1.4" ]]; then
-    echo '0 11 * * 1-5'
-  elif [[ "$branch" == "knative-v1.5" ]]; then
-    echo '0 13 * * 1-5'
-  elif [[ "$branch" == "knative-v1.6" ]]; then
-    echo '0 15 * * 1-5'
-  elif [[ "$branch" == "knative-v1.7" ]]; then
-    echo '0 17 * * 1-5'
-  elif [[ "$branch" == "knative-v1.8" ]]; then
+  if [[ "$branch" == "knative-v1.8" ]]; then
     echo '0 19 * * 1-5'
+  elif [[ "$branch" == "knative-v1.9" ]]; then
+    echo '0 1 * * 1-5'
+  elif [[ "$branch" == "knative-v1.10" ]]; then
+    echo '0 3 * * 1-5'
+  elif [[ "$branch" == "knative-v1.11" ]]; then
+    echo '0 5 * * 1-5'
+  elif [[ "$branch" == "knative-v1.12" ]]; then
+    echo '0 7 * * 1-5'
+  elif [[ "$branch" == "knative-v1.13" ]]; then
+    echo '0 9 * * 1-5'
+  elif [[ "$branch" == "knative-v1.14" ]]; then
+    echo '0 11 * * 1-5'
+  elif [[ "$branch" == "knative-v1.15" ]]; then
+    echo '0 13 * * 1-5'
+  elif [[ "$branch" == "knative-v1.16" ]]; then
+    echo '0 15 * * 1-5'
+  elif [[ "$branch" == "knative-v1.17" ]]; then
+    echo '0 17 * * 1-5'
   fi
 }
 

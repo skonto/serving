@@ -42,7 +42,7 @@ CURDIR=$(dirname $0)
 # $1=branch $2=openshift $3=promotion_disabled $4=generate_continuous $5=internal_tls_enabled(optional)
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.8 true false > ${CONFIG}__48.yaml
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.9 true false > ${CONFIG}__49.yaml
-$CURDIR/generate-ci-config.sh knative-$VERSION 4.10 true false > ${CONFIG}__410.yaml
+$CURDIR/generate-ci-config.sh knative-$VERSION 4.11 true false > ${CONFIG}__411.yaml
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.11 false true true > ${CONFIG}__411.yaml
 
 # Append missing lines to the mirror file.
