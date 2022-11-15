@@ -5774,7 +5774,7 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop:
-                - all
+                - ALL
           ports:
             - name: metrics
               containerPort: 9090
@@ -5934,7 +5934,7 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop:
-                - all
+                - ALL
           ports:
             - name: metrics
               containerPort: 9090
@@ -6064,7 +6064,7 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop:
-                - all
+                - ALL
           ports:
             - name: metrics
               containerPort: 9090
@@ -6172,7 +6172,7 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop:
-                - all
+                - ALL
           ports:
             - name: metrics
               containerPort: 9090
@@ -6266,7 +6266,7 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop:
-                - all
+                - ALL
           ports:
             - name: metrics
               containerPort: 9090
@@ -6465,7 +6465,7 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop:
-                - all
+                - ALL
           ports:
             - name: metrics
               containerPort: 9090
