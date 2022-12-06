@@ -216,6 +216,8 @@ spec:
     kourier:
       service-type: "LoadBalancer" # To enable gRPC and HTTP2 tests without OCP Route.
   config:
+    features:
+      secure-pod-defaults: "enabled"
     deployment:
       progressDeadline: "120s"
     observability:
