@@ -53,3 +53,6 @@ git apply "${manifest_path}/003-serving-pdb.patch"
 
 # Add psp patch.
 git apply "${manifest_path}/005-psp.patch"
+
+# Add secure-pod-defaults config option.
+git apply "${manifest_path}/006-secure-pod-defaults.patch"

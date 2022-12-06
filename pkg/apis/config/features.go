@@ -60,6 +60,7 @@ func defaultFeaturesConfig() *Features {
 		PodSpecInitContainers:            Disabled,
 		PodSpecDNSPolicy:                 Disabled,
 		PodSpecDNSConfig:                 Disabled,
+		SecurePodDefaults:                Disabled,
 		TagHeaderBasedRouting:            Disabled,
 		AutoDetectHTTP2:                  Disabled,
 	}
@@ -89,6 +90,7 @@ func NewFeaturesConfigFromMap(data map[string]string) (*Features, error) {
 		asFlag("kubernetes.podspec-persistent-volume-write", &nc.PodSpecPersistentVolumeWrite),
 		asFlag("kubernetes.podspec-dnspolicy", &nc.PodSpecDNSPolicy),
 		asFlag("kubernetes.podspec-dnsconfig", &nc.PodSpecDNSConfig),
+		asFlag("secure-pod-defaults", &nc.SecurePodDefaults),
 		asFlag("tag-header-based-routing", &nc.TagHeaderBasedRouting),
 		asFlag("autodetect-http2", &nc.AutoDetectHTTP2)); err != nil {
 		return nil, err
@@ -122,6 +124,7 @@ type Features struct {
 	PodSpecPersistentVolumeWrite     Flag
 	PodSpecDNSPolicy                 Flag
 	PodSpecDNSConfig                 Flag
+	SecurePodDefaults                Flag
 	TagHeaderBasedRouting            Flag
 	AutoDetectHTTP2                  Flag
 }

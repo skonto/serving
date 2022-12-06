@@ -251,6 +251,21 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 		}
 	}
 
+	//if cfg.Features.SecurePodDefaults == apicfg.Enabled {
+	//	psc := rev.Spec.SecurityContext
+	//	if psc == nil {
+	//		psc = &corev1.PodSecurityContext{}
+	//	}
+	//	if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
+	//		if queueSecurityContext.SeccompProfile == nil {
+	//			queueSecurityContext.SeccompProfile = &corev1.SeccompProfile{}
+	//		}
+	//		if queueSecurityContext.SeccompProfile.Type == "" {
+	//			queueSecurityContext.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
+	//		}
+	//	}
+	//}
+
 	c := &corev1.Container{
 		Name:            QueueContainerName,
 		Image:           cfg.Deployment.QueueSidecarImage,
