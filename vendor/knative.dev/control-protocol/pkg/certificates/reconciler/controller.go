@@ -20,6 +20,7 @@ import (
 	"context"
 
 	v1 "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/tools/cache"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/system"

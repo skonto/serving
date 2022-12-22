@@ -19,6 +19,7 @@ package main
 import (
 	// The set of controllers this controller process runs.
 	certificate "knative.dev/control-protocol/pkg/certificates/reconciler"
+	filteredFactory "knative.dev/pkg/client/injection/kube/informers/factory/filtered"
 	"knative.dev/pkg/signals"
 	"knative.dev/serving/pkg/reconciler/configuration"
 	"knative.dev/serving/pkg/reconciler/gc"
