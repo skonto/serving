@@ -19,6 +19,8 @@ package main
 import (
 	// The set of controllers this controller process runs.
 	certificate "knative.dev/control-protocol/pkg/certificates/reconciler"
+	filteredFactory "knative.dev/pkg/client/injection/kube/informers/factory/filtered"
+	"knative.dev/pkg/signals"
 	"knative.dev/serving/pkg/reconciler/configuration"
 	"knative.dev/serving/pkg/reconciler/gc"
 	"knative.dev/serving/pkg/reconciler/labeler"
@@ -28,10 +30,13 @@ import (
 	"knative.dev/serving/pkg/reconciler/serverlessservice"
 	"knative.dev/serving/pkg/reconciler/service"
 
-	// This defines the shared main for injected controllers.
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/serving/pkg/networking"
+)
+
+const (
+	secretLabelNamePostfix = "-ctrl"
 )
 
 var ctors = []injection.ControllerConstructor{
@@ -47,5 +52,7 @@ var ctors = []injection.ControllerConstructor{
 }
 
 func main() {
-	sharedmain.Main("controller", ctors...)
+	labelName := networking.ServingCertName + secretLabelNamePostfix
+	ctx := filteredFactory.WithSelectors(signals.NewContext(), labelName)
+	sharedmain.MainWithContext(ctx, "controller", ctors...)
 }
