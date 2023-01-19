@@ -216,8 +216,19 @@ spec:
     kourier:
       service-type: "LoadBalancer" # To enable gRPC and HTTP2 tests without OCP Route.
   config:
+    features:
+      secure-pod-defaults: "enabled"
     deployment:
       progressDeadline: "120s"
+    logging:
+      loglevel.activator: "debug"
+      loglevel.autoscaler: "debug"
+      loglevel.controller: "debug"
+      loglevel.queueproxy: "debug"
+      loglevel.webhook: "debug"
+      loglevel.hpaautoscaler: "debug"
+      loglevel.domainmapping: "debug"
+      loglevel.domainmapping-webhook: "debug"
     observability:
       logging.request-log-template: '{"httpRequest": {"requestMethod": "{{.Request.Method}}",
         "requestUrl": "{{js .Request.RequestURI}}", "requestSize": "{{.Request.ContentLength}}",
@@ -350,6 +361,7 @@ function run_e2e_tests(){
   fi
 
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-volumes-emptydir": "enabled"}}}}' || fail_test
+  oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"secure-pod-defaults": "enabled"}}}}' || fail_test
   go_test_e2e -tags=e2e -timeout=30m -parallel=$parallel \
     ./test/e2e ./test/conformance/api/... ./test/conformance/runtime/... \
     --kubeconfig "$KUBECONFIG" \
@@ -427,6 +439,15 @@ function run_e2e_tests(){
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-persistent-volume-claim": "disabled"}}}}' || fail_test
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-persistent-volume-write": "disabled"}}}}' || fail_test
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-securitycontext": "disabled"}}}}' || fail_test
+
+  # RUN secure pod defaults test in a separate install.
+  go_test_e2e -timeout=3m ./test/e2e/securedefaults  \
+    --kubeconfig "$KUBECONFIG" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+    --enable-alpha \
+    --https \
+    --skip-cleanup-on-fail \
+    --resolvabledomain || failed=1
 
   # Run the helloworld test with an image pulled into the internal registry.
   local image_to_tag=$KNATIVE_SERVING_TEST_HELLOWORLD

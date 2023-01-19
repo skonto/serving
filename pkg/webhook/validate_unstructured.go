@@ -110,5 +110,5 @@ func validateRevisionTemplate(ctx context.Context, uns *unstructured.Unstructure
 		}
 	}
 
-	return validatePodSpec(ctx, templ.Spec, namespace, mode)
+	return validatePodSpec(v1.MaybeSkipSeccompProfile(ctx, templ.Annotations), templ.Spec, namespace, mode)
 }

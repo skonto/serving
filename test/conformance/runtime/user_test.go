@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"knative.dev/serving/test"
 
 	. "knative.dev/serving/pkg/testing/v1"
@@ -84,7 +85,7 @@ func TestShouldRunAsUserContainerDefault(t *testing.T) {
 
 	t.Parallel()
 	clients := test.Setup(t)
-	_, ri, err := fetchRuntimeInfo(t, clients)
+	_, ri, err := fetchRuntimeInfo(t, clients, WithRevisionAnnotation(servingv1.SkipSeccompProfileAnnotation, "true"))
 
 	if err != nil {
 		t.Fatal("Error fetching runtime info:", err)

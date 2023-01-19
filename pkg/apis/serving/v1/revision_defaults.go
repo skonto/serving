@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"os"
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,8 @@ import (
 	"knative.dev/serving/pkg/apis/config"
 )
 
+const SkipSeccompProfileAnnotation = "serving.knative.openshift.io/skipSeccompProfile"
+
 // SetDefaults implements apis.Defaultable
 func (r *Revision) SetDefaults(ctx context.Context) {
 	// SetDefaults may update revision spec which is immutable.
@@ -36,12 +39,12 @@ func (r *Revision) SetDefaults(ctx context.Context) {
 	if apis.IsInUpdate(ctx) {
 		return
 	}
-	r.Spec.SetDefaults(apis.WithinSpec(ctx))
+	r.Spec.SetDefaults(MaybeSkipSeccompProfile(apis.WithinSpec(ctx), r.Annotations))
 }
 
 // SetDefaults implements apis.Defaultable
 func (rts *RevisionTemplateSpec) SetDefaults(ctx context.Context) {
-	rts.Spec.SetDefaults(apis.WithinSpec(ctx))
+	rts.Spec.SetDefaults(MaybeSkipSeccompProfile(apis.WithinSpec(ctx), rts.Annotations))
 }
 
 // SetDefaults implements apis.Defaultable
@@ -72,6 +75,10 @@ func (rs *RevisionSpec) SetDefaults(ctx context.Context) {
 	applyDefaultContainerNames(rs.PodSpec.InitContainers, containerNames, defaultInitContainerName)
 	for idx := range rs.PodSpec.Containers {
 		rs.applyDefault(ctx, &rs.PodSpec.Containers[idx], cfg)
+		rs.defaultSecurityContext(ctx, rs.PodSpec.SecurityContext, &rs.PodSpec.Containers[idx], cfg)
+	}
+	for idx := range rs.PodSpec.InitContainers {
+		rs.defaultSecurityContext(ctx, rs.PodSpec.SecurityContext, &rs.PodSpec.InitContainers[idx], cfg)
 	}
 }
 
@@ -181,4 +188,77 @@ func applyDefaultContainerNames(containers []corev1.Container, containerNames se
 			containers[idx].Name = name
 		}
 	}
+}
+
+func (rs *RevisionSpec) defaultSecurityContext(ctx context.Context, psc *corev1.PodSecurityContext, container *corev1.Container, cfg *config.Config) {
+	if cfg.Features.SecurePodDefaults != config.Enabled {
+		return
+	}
+
+	if psc == nil {
+		psc = &corev1.PodSecurityContext{}
+	}
+
+	updatedSC := container.SecurityContext
+
+	if updatedSC == nil {
+		updatedSC = &corev1.SecurityContext{}
+	}
+
+	if updatedSC.AllowPrivilegeEscalation == nil {
+		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
+	}
+
+	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !skipSeccompProfile(ctx) { // Only apply the profile in 4.11+
+		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
+			if updatedSC.SeccompProfile == nil {
+				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
+			}
+			if updatedSC.SeccompProfile.Type == "" {
+				updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
+			}
+		}
+	}
+	if updatedSC.Capabilities == nil {
+		updatedSC.Capabilities = &corev1.Capabilities{}
+		updatedSC.Capabilities.Drop = []corev1.Capability{"ALL"}
+		// Default in NET_BIND_SERVICE to allow binding to low-numbered ports.
+		needsLowPort := false
+		for _, p := range container.Ports {
+			if p.ContainerPort > 0 && p.ContainerPort < 1024 {
+				needsLowPort = true
+				break
+			}
+		}
+		if updatedSC.Capabilities.Add == nil && needsLowPort {
+			updatedSC.Capabilities.Add = []corev1.Capability{"NET_BIND_SERVICE"}
+		}
+	}
+	if psc.RunAsNonRoot == nil && updatedSC.RunAsNonRoot == nil {
+		updatedSC.RunAsNonRoot = ptr.Bool(true)
+	}
+	if *updatedSC != (corev1.SecurityContext{}) {
+		container.SecurityContext = updatedSC
+	}
+}
+
+type skipSeccompProfileKey struct{}
+
+func withSkipSeccompProfile(ctx context.Context) context.Context {
+	return context.WithValue(ctx, skipSeccompProfileKey{}, struct{}{})
+}
+
+func skipSeccompProfile(ctx context.Context) bool {
+	return ctx.Value(skipSeccompProfileKey{}) != nil
+}
+
+func MaybeSkipSeccompProfile(ctx context.Context, annotations map[string]string) context.Context {
+	if v, ok := annotations[SkipSeccompProfileAnnotation]; ok {
+		if b, err := strconv.ParseBool(v); err == nil {
+			if b {
+				return withSkipSeccompProfile(ctx)
+			}
+		}
+	}
+	return ctx
 }

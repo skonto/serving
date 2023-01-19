@@ -19,6 +19,7 @@ package resources
 import (
 	"fmt"
 	"math"
+	"os"
 	"path"
 	"strconv"
 
@@ -259,14 +260,15 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 		}
 	}
 
+	psc := rev.Spec.PodSpec.SecurityContext
+
 	c := &corev1.Container{
-		Name:            QueueContainerName,
-		Image:           cfg.Deployment.QueueSidecarImage,
-		Resources:       createQueueResources(cfg.Deployment, rev.GetAnnotations(), container),
-		Ports:           ports,
-		StartupProbe:    execProbe,
-		ReadinessProbe:  httpProbe,
-		SecurityContext: queueSecurityContext,
+		Name:           QueueContainerName,
+		Image:          cfg.Deployment.QueueSidecarImage,
+		Resources:      createQueueResources(cfg.Deployment, rev.GetAnnotations(), container),
+		Ports:          ports,
+		StartupProbe:   execProbe,
+		ReadinessProbe: httpProbe,
 		Env: []corev1.EnvVar{{
 			Name:  "SERVING_NAMESPACE",
 			Value: rev.Namespace,
@@ -379,6 +381,40 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 		}},
 	}
 
+	if psc == nil {
+		psc = &corev1.PodSecurityContext{}
+	}
+	updatedSC := queueSecurityContext
+
+	shouldSkipSeccompProfile := false
+	if v, ok := rev.GetAnnotations()[v1.SkipSeccompProfileAnnotation]; ok {
+		if b, err := strconv.ParseBool(v); err == nil {
+			if b {
+				shouldSkipSeccompProfile = true
+			}
+		}
+	}
+
+	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !shouldSkipSeccompProfile { // Only apply the profile in 4.11+
+		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
+			updatedSC = &corev1.SecurityContext{
+				AllowPrivilegeEscalation: ptr.Bool(false),
+				ReadOnlyRootFilesystem:   ptr.Bool(true),
+				RunAsNonRoot:             ptr.Bool(true),
+				Capabilities: &corev1.Capabilities{
+					Drop: []corev1.Capability{"ALL"},
+				},
+			}
+			if updatedSC.SeccompProfile == nil {
+				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
+			}
+			if updatedSC.SeccompProfile.Type == "" {
+				updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
+			}
+		}
+	}
+
+	c.SecurityContext = updatedSC
 	return c, nil
 }
 
