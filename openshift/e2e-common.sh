@@ -277,8 +277,6 @@ function prepare_knative_serving_tests_nightly {
   # Apply persistent volume claim needed, needed for the related e2e test.
   oc apply -f ./test/config/pvc/pvc.yaml
 
-  oc adm policy add-scc-to-user privileged -z default -n serving-tests
-  oc adm policy add-scc-to-user privileged -z default -n serving-tests-alt
   # Adding scc for anyuid to test TestShouldRunAsUserContainerDefault.
   oc adm policy add-scc-to-user anyuid -z default -n serving-tests
 
@@ -322,6 +320,9 @@ function run_e2e_tests(){
   # Give the controller time to sync with the rest of the system components.
   sleep 30
   subdomain=$(oc get ingresses.config.openshift.io cluster  -o jsonpath="{.spec.domain}")
+
+  // Enable secure pod defaults for all tests.
+  oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"secure-pod-defaults": "enabled"}}}}' || fail_test
 
   if [ -n "$test_name" ]; then
     oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-volumes-emptydir": "enabled"}}}}' || fail_test
@@ -494,6 +495,30 @@ function run_e2e_tests(){
     --https \
     --skip-cleanup-on-fail \
     --resolvabledomain || failed=1
+
+
+  # Verify that the right sc is set by default and seccompProfile is injected on OCP >= 4.11.
+  go_test_e2e -timeout=3m ./test/e2e/securedefaults -run "^(TestSecureDefaults)$" \
+    --kubeconfig "$KUBECONFIG" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+    --enable-alpha \
+    --https \
+    --skip-cleanup-on-fail \
+    --resolvabledomain || failed=1
+
+  # Allow to use any seccompProfile for non default cases,
+  # for more check https://docs.openshift.com/container-platform/4.12/authentication/managing-security-context-constraints.html
+  oc adm policy add-scc-to-user privileged -z default -n serving-tests
+
+  # Verify that non secure settings are allowed, although not-recommended.
+  go_test_e2e -timeout=3m ./test/e2e/securedefaults -run "^(TestUnsafePermitted)$" \
+    --kubeconfig "$KUBECONFIG" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+    --enable-alpha \
+    --https \
+    --skip-cleanup-on-fail \
+    --resolvabledomain || failed=1
+
 
   return $failed
 }
