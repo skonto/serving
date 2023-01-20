@@ -262,7 +262,7 @@ func CheckNameAvailability(ctx context.Context, config *v1.Configuration, lister
 func (c *Reconciler) latestCreatedRevision(ctx context.Context, config *v1.Configuration) (*v1.Revision, error) {
 	logger := logging.FromContext(ctx)
 	if rev, err := CheckNameAvailability(ctx, config, c.revisionLister); rev != nil || err != nil {
-		logger.Debugf("DChecking revision: %v", rev)
+		logger.Debugf("DChecking Revision: %v", rev)
 		return rev, err
 	}
 
@@ -284,9 +284,10 @@ func (c *Reconciler) latestCreatedRevision(ctx context.Context, config *v1.Confi
 	}))
 
 	if err == nil && len(list) > 0 {
+		logger.Debugf("Actual revisions list[0]: %v", list[0])
 		return list[0], nil
 	}
-	logger.Debugf("DChecking revision not found for config gen: %s", config.Generation)
+	logger.Debugf("DChecking revision not found for config gen: %s-%s", config.Name, config.Generation)
 	return nil, errors.NewNotFound(v1.Resource("revisions"), "revision for "+config.Name)
 }
 
