@@ -105,6 +105,7 @@ func TestUpdateConfigurationMetadata(t *testing.T) {
 		"label-x": "abc",
 		"label-y": "def",
 	}
+	t.Logf("DConfiguration 1: %v", cfg)
 	// Copy over new labels.
 	cfg.Labels = kmeta.UnionMaps(cfg.Labels, newLabels)
 	cfg, err := clients.ServingClient.Configs.Update(context.Background(), cfg, metav1.UpdateOptions{})
@@ -117,6 +118,7 @@ func TestUpdateConfigurationMetadata(t *testing.T) {
 	}
 
 	cfg = fetchConfiguration(names.Config, clients, t)
+	t.Logf("DConfiguration 2: %v", cfg)
 	expected := names.Revision
 	actual := cfg.Status.LatestCreatedRevisionName
 	if expected != actual {
@@ -149,6 +151,7 @@ func TestUpdateConfigurationMetadata(t *testing.T) {
 	}
 
 	cfg = fetchConfiguration(names.Config, clients, t)
+	t.Logf("DConfiguration 3: %v", cfg)
 	actual = cfg.Status.LatestCreatedRevisionName
 	if expected != actual {
 		t.Errorf("Did not expect a new Revision after updating annotations for Configuration %s - expected Revision: %s, actual Revision: %s",
