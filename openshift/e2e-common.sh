@@ -218,6 +218,7 @@ spec:
   config:
     features:
       secure-pod-defaults: "enabled"
+      kubernetes.containerspec-addcapabilities: "enabled"
     deployment:
       progressDeadline: "120s"
     observability:

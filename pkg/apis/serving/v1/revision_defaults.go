@@ -206,14 +206,14 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
 
-	//if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
-	//	if updatedSC.SeccompProfile == nil {
-	//		updatedSC.SeccompProfile = &corev1.SeccompProfile{}
-	//	}
-	//	if updatedSC.SeccompProfile.Type == "" {
-	//		updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
-	//	}
-	//}
+	if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
+		if updatedSC.SeccompProfile == nil {
+			updatedSC.SeccompProfile = &corev1.SeccompProfile{}
+		}
+		if updatedSC.SeccompProfile.Type == "" {
+			updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
+		}
+	}
 	if updatedSC.Capabilities == nil {
 		updatedSC.Capabilities = &corev1.Capabilities{}
 	}
@@ -231,9 +231,9 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 			updatedSC.Capabilities.Add = []corev1.Capability{"NET_BIND_SERVICE"}
 		}
 	}
-	if psc.RunAsNonRoot == nil && updatedSC.RunAsNonRoot == nil {
-		updatedSC.RunAsNonRoot = ptr.Bool(true)
-	}
+	//if psc.RunAsNonRoot == nil && updatedSC.RunAsNonRoot == nil {
+	//	updatedSC.RunAsNonRoot = ptr.Bool(true)
+	//}
 	if *updatedSC != (corev1.SecurityContext{}) {
 		container.SecurityContext = updatedSC
 	}
