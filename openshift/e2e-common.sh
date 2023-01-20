@@ -221,6 +221,15 @@ spec:
       kubernetes.containerspec-addcapabilities: "enabled"
     deployment:
       progressDeadline: "120s"
+    logging:
+      loglevel.activator: "debug"
+      loglevel.autoscaler: "debug"
+      loglevel.controller: "debug"
+      loglevel.queueproxy: "debug"
+      loglevel.webhook: "debug"
+      loglevel.hpaautoscaler: "debug"
+      loglevel.domainmapping: "debug"
+      loglevel.domainmapping-webhook: "debug"
     observability:
       logging.request-log-template: '{"httpRequest": {"requestMethod": "{{.Request.Method}}",
         "requestUrl": "{{js .Request.RequestURI}}", "requestSize": "{{.Request.ContentLength}}",
