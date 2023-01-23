@@ -205,7 +205,6 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 	if updatedSC.AllowPrivilegeEscalation == nil {
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
-
 	if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 		if updatedSC.SeccompProfile == nil {
 			updatedSC.SeccompProfile = &corev1.SeccompProfile{}
@@ -216,8 +215,6 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 	}
 	if updatedSC.Capabilities == nil {
 		updatedSC.Capabilities = &corev1.Capabilities{}
-	}
-	if updatedSC.Capabilities.Drop == nil {
 		updatedSC.Capabilities.Drop = []corev1.Capability{"ALL"}
 		// Default in NET_BIND_SERVICE to allow binding to low-numbered ports.
 		needsLowPort := false

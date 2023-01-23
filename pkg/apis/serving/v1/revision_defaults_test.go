@@ -948,8 +948,7 @@ func TestRevisionDefaulting(t *testing.T) {
 							},
 							//RunAsNonRoot: ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
-								Add:  []corev1.Capability{"NET_ADMIN"},
-								Drop: []corev1.Capability{"ALL"},
+								Add: []corev1.Capability{"NET_ADMIN"},
 							},
 						},
 					}},
