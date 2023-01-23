@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"os"
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
@@ -205,14 +206,25 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 	if updatedSC.AllowPrivilegeEscalation == nil {
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
-	if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
-		if updatedSC.SeccompProfile == nil {
-			updatedSC.SeccompProfile = &corev1.SeccompProfile{}
-		}
-		if updatedSC.SeccompProfile.Type == "" {
-			updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
+
+	var skip string
+	for _, v := range container.Env {
+		if v.Name == "KNATIVE_SKIP_SECCOMP_PROFILE" {
+			skip = v.Value
 		}
 	}
+	skipBool, _ := strconv.ParseBool(skip)
+	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !skipBool { // Only apply the profile in 4.11+
+		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
+			if updatedSC.SeccompProfile == nil {
+				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
+			}
+			if updatedSC.SeccompProfile.Type == "" {
+				updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
+			}
+		}
+	}
+
 	if updatedSC.Capabilities == nil {
 		updatedSC.Capabilities = &corev1.Capabilities{}
 		updatedSC.Capabilities.Drop = []corev1.Capability{"ALL"}

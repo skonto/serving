@@ -84,10 +84,7 @@ func TestShouldRunAsUserContainerDefault(t *testing.T) {
 
 	t.Parallel()
 	clients := test.Setup(t)
-	_, ri, err := fetchRuntimeInfo(t, clients, WithSecurityContext(&corev1.SecurityContext{
-		SeccompProfile: &corev1.SeccompProfile{
-			Type: corev1.SeccompProfileTypeUnconfined,
-		}}))
+	_, ri, err := fetchRuntimeInfo(t, clients, WithEnv(corev1.EnvVar{Name: "KNATIVE_SKIP_SECCOMP_PROFILE", Value: "true"}))
 
 	if err != nil {
 		t.Fatal("Error fetching runtime info:", err)

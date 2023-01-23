@@ -50,6 +50,7 @@ var (
 
 func TestRevisionDefaulting(t *testing.T) {
 	logger := logtesting.TestLogger(t)
+	t.Setenv("OCP_SECCOMP_PROFILE_WITHOUT_SCC", "true")
 	tests := []struct {
 		name string
 		in   *Revision
