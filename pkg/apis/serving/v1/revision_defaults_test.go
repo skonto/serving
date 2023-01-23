@@ -904,7 +904,7 @@ func TestRevisionDefaulting(t *testing.T) {
 							SeccompProfile: &corev1.SeccompProfile{
 								Type: corev1.SeccompProfileTypeRuntimeDefault,
 							},
-							//RunAsNonRoot: ptr.Bool(true),
+							RunAsNonRoot: ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 								Add:  []corev1.Capability{"NET_BIND_SERVICE"},
@@ -918,7 +918,7 @@ func TestRevisionDefaulting(t *testing.T) {
 							SeccompProfile: &corev1.SeccompProfile{
 								Type: corev1.SeccompProfileTypeRuntimeDefault,
 							},
-							//RunAsNonRoot: ptr.Bool(true),
+							RunAsNonRoot: ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},
@@ -931,7 +931,7 @@ func TestRevisionDefaulting(t *testing.T) {
 							SeccompProfile: &corev1.SeccompProfile{
 								Type: corev1.SeccompProfileTypeRuntimeDefault,
 							},
-							//RunAsNonRoot: ptr.Bool(true),
+							RunAsNonRoot: ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
 								Add:  []corev1.Capability{"NET_ADMIN"},
 								Drop: []corev1.Capability{},
@@ -946,7 +946,7 @@ func TestRevisionDefaulting(t *testing.T) {
 								Type:             corev1.SeccompProfileTypeLocalhost,
 								LocalhostProfile: ptr.String("special"),
 							},
-							//RunAsNonRoot: ptr.Bool(true),
+							RunAsNonRoot: ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
 								Add: []corev1.Capability{"NET_ADMIN"},
 							},
@@ -1005,7 +1005,7 @@ func TestRevisionDefaulting(t *testing.T) {
 						Resources:      defaultResources,
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: ptr.Bool(false),
-							//RunAsNonRoot:             ptr.Bool(true),
+							RunAsNonRoot:             ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},
@@ -1015,7 +1015,7 @@ func TestRevisionDefaulting(t *testing.T) {
 						Name: "init",
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: ptr.Bool(false),
-							//RunAsNonRoot:             ptr.Bool(true),
+							RunAsNonRoot:             ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{"ALL"},
 							},

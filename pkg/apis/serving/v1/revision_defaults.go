@@ -228,9 +228,9 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 			updatedSC.Capabilities.Add = []corev1.Capability{"NET_BIND_SERVICE"}
 		}
 	}
-	//if psc.RunAsNonRoot == nil && updatedSC.RunAsNonRoot == nil {
-	//	updatedSC.RunAsNonRoot = ptr.Bool(true)
-	//}
+	if psc.RunAsNonRoot == nil && updatedSC.RunAsNonRoot == nil {
+		updatedSC.RunAsNonRoot = ptr.Bool(true)
+	}
 	if *updatedSC != (corev1.SecurityContext{}) {
 		container.SecurityContext = updatedSC
 	}
