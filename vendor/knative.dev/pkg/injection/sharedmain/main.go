@@ -40,6 +40,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"k8s.io/client-go/discovery"
 	cminformer "knative.dev/pkg/configmap/informer"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -53,6 +54,7 @@ import (
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
 	"knative.dev/pkg/webhook"
+
 	"github.com/blang/semver/v4"
 )
 
@@ -228,7 +230,7 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	CheckK8sClientMinimumVersionOrDie(ctx, logger)
 	// HACK: should go away when we move away from < 4.11 releases
-	if err := checkMinimumKubeVersion(ctx, "1.24.0"); err == nil {
+	if err := CheckMinimumKubeVersion(kubeclient.Get(ctx).Discovery(), "1.24.0"); err == nil {
 		os.Setenv("OCP_SECCOMP_PROFILE_WITHOUT_SCC", "true")
 	}
 	cmw := SetupConfigMapWatchOrDie(ctx, logger)
@@ -425,10 +427,8 @@ func ControllersAndWebhooksFromCtors(ctx context.Context,
 }
 
 // CheckMinimumKubeVersion checks if current K8s version we are on is higher than the one passed.
-// If an error is returned then we
-func checkMinimumKubeVersion(ctx context.Context, version string) error {
-	kc := kubeclient.Get(ctx)
-	versioner := kc.Discovery()
+// If an error is returned then the version is not higher than the minimum
+func CheckMinimumKubeVersion(versioner discovery.ServerVersionInterface, version string) error {
 	v, err := versioner.ServerVersion()
 	if err != nil {
 		return err
