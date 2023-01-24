@@ -231,7 +231,7 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 		// Default in NET_BIND_SERVICE to allow binding to low-numbered ports.
 		needsLowPort := false
 		for _, p := range container.Ports {
-			if p.ContainerPort < 1024 {
+			if p.ContainerPort > 0 && p.ContainerPort < 1024 {
 				needsLowPort = true
 				break
 			}
