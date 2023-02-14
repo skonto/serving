@@ -19,7 +19,7 @@ metadata:
   name: images.caching.internal.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: caching.internal.knative.dev
@@ -140,7 +140,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -288,7 +288,7 @@ metadata:
   name: configurations.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
     duck.knative.dev/podspecable: "true"
 spec:
@@ -746,7 +746,7 @@ spec:
                                     description: The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
                                     type: integer
                                     format: int64
-                                  
+                                  seccompProfile:
                                     description: The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
                                     type: object
                                     required:
@@ -1125,7 +1125,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -1188,7 +1188,7 @@ metadata:
   name: domainmappings.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: serving.knative.dev
@@ -1456,7 +1456,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -1715,7 +1715,7 @@ metadata:
   name: metrics.autoscaling.internal.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: autoscaling.internal.knative.dev
@@ -1836,7 +1836,7 @@ metadata:
   name: podautoscalers.autoscaling.internal.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: autoscaling.internal.knative.dev
@@ -1995,7 +1995,7 @@ metadata:
   name: revisions.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: serving.knative.dev
@@ -2432,7 +2432,7 @@ spec:
                             description: The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
                             type: integer
                             format: int64
-                          
+                          seccompProfile:
                             description: The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
                             type: object
                             required:
@@ -2839,7 +2839,7 @@ metadata:
   name: routes.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
 spec:
@@ -3012,7 +3012,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -3177,7 +3177,7 @@ metadata:
   name: services.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.9.0"
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
     duck.knative.dev/podspecable: "true"
@@ -3639,7 +3639,7 @@ spec:
                                     description: The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
                                     type: integer
                                     format: int64
-                                  
+                                  seccompProfile:
                                     description: The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
                                     type: object
                                     required:
