@@ -292,6 +292,7 @@ function prepare_knative_serving_tests_nightly {
   oc adm policy add-scc-to-user privileged -z default -n serving-tests-alt
   # Adding scc for anyuid to test TestShouldRunAsUserContainerDefault.
   oc adm policy add-scc-to-user anyuid -z default -n serving-tests
+  oc adm policy add-scc-to-user nonroot-v2 -z default -n serving-tests
 
   export SYSTEM_NAMESPACE="$SERVING_NAMESPACE"
   export GATEWAY_OVERRIDE=kourier

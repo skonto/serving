@@ -207,14 +207,7 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
 
-	var skip string
-	for _, v := range container.Env {
-		if v.Name == "KNATIVE_SKIP_SECCOMP_PROFILE" {
-			skip = v.Value
-		}
-	}
-	skipBool, _ := strconv.ParseBool(skip)
-	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !skipBool { // Only apply the profile in 4.11+
+	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok { // Only apply the profile in 4.11+
 		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 			if updatedSC.SeccompProfile == nil {
 				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
