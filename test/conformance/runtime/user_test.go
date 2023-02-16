@@ -83,7 +83,7 @@ func TestShouldRunAsUserContainerDefault(t *testing.T) {
 	}
 
 	securityContext := &corev1.SecurityContext{
-		SeccompProfile: corev1.SeccompProfile{
+		SeccompProfile: &corev1.SeccompProfile{
 			Type: corev1.SeccompProfileTypeUnconfined,
 		},
 	}
