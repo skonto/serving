@@ -48,7 +48,8 @@ func (r *Revision) SetDefaults(ctx context.Context) {
 		if b, err := strconv.ParseBool(v); err == nil {
 			if b {
 				logger.Debug("HERE2")
-				ctx = withSkipSeccompProfile(ctx)
+				r.Spec.SetDefaults(withSkipSeccompProfile(apis.WithinSpec(ctx)))
+				return
 			}
 		}
 	}
