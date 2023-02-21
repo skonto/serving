@@ -21,6 +21,7 @@ package serving
 
 import (
 	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/serving/pkg/apis/config"
 )
@@ -609,7 +610,7 @@ func PodSecurityContextMask(ctx context.Context, in *corev1.PodSecurityContext) 
 	if config.FromContextOrDefaults(ctx).Features.PodSpecSecurityContext == config.Disabled {
 		return out
 	}
-	
+
 	out.RunAsUser = in.RunAsUser
 	out.RunAsGroup = in.RunAsGroup
 	out.RunAsNonRoot = in.RunAsNonRoot

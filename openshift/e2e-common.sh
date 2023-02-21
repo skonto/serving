@@ -276,25 +276,6 @@ function create_configmaps(){
   oc create configmap ko-data-eventing -n $OPERATORS_NAMESPACE --from-file="${KNATIVE_SERVING_TEST_MANIFESTS_DIR}/knative-eventing-ci.yaml" || return $?
 }
 
-# Returns if the first version passed is greater or equal to the second one.
-function versions.ge {
-  local v1 v2 cmp
-  v1="${1:?Pass a version to check as arg[1]}"
-  v2="${2:?Pass a version to check against as arg[2]}"
-  cmp="$(echo -e "${v1}\n${v2}" | sort -V | tail -n 1)"
-
-  [ "${v1}" = "${cmp}" ]
-}
-
-# Returns the major and minor part of the whole version, joined with a dot.
-function versions.major_minor {
-  local version=${1:?Pass a full version as arg[1]}
-  # shellcheck disable=SC2001
-  # Ref: https://regex101.com/r/Po1HA3/1
-  echo "${version}" | sed 's/^v\?\([[:digit:]]\+\)\.\([[:digit:]]\+\).*/\1.\2/'
-
-}
-
 function prepare_knative_serving_tests_nightly {
   echo ">> Creating test resources for OpenShift (test/config/)"
 
@@ -311,11 +292,6 @@ function prepare_knative_serving_tests_nightly {
   oc adm policy add-scc-to-user privileged -z default -n serving-tests-alt
   # Adding scc for anyuid to test TestShouldRunAsUserContainerDefault.
   oc adm policy add-scc-to-user anyuid -z default -n serving-tests
-
-  ocp_version=$(oc get clusterversion version -o jsonpath='{.status.desired.version}')
-  if versions.ge "$(versions.major_minor "$ocp_version")" 4.11; then
-      oc adm policy add-scc-to-user nonroot-v2 -z default -n serving-tests
-  fi
 
   export SYSTEM_NAMESPACE="$SERVING_NAMESPACE"
   export GATEWAY_OVERRIDE=kourier

@@ -18,12 +18,8 @@ package v1
 
 import (
 	"context"
-	"fmt"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/equality"
+
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmp"
-	"knative.dev/pkg/logging"
 	"knative.dev/serving/pkg/apis/serving"
 )
 
@@ -48,10 +44,8 @@ func (c *Configuration) SetDefaults(ctx context.Context) {
 	ctx = apis.WithinParent(ctx, c.ObjectMeta)
 
 	var prevSpec *ConfigurationSpec
-	var existing *Configuration
 	if prev, ok := apis.GetBaseline(ctx).(*Configuration); ok && prev != nil {
 		prevSpec = &prev.Spec
-		existing = prev
 		ctx = WithPreviousConfigurationSpec(ctx, prevSpec)
 	}
 
@@ -60,24 +54,6 @@ func (c *Configuration) SetDefaults(ctx context.Context) {
 	if c.GetOwnerReferences() == nil {
 		serving.SetUserInfo(ctx, prevSpec, &c.Spec, c)
 	}
-
-	if existing != nil {
-		configSemanticEquals(ctx, c, existing)
-	}
-}
-func configSemanticEquals(ctx context.Context, desiredConfig, config *Configuration) (bool, error) {
-	logger := logging.FromContext(ctx)
-	specDiff, err := kmp.SafeDiff(desiredConfig.Spec, config.Spec)
-	if err != nil {
-		logger.Warnw("Error diffing config spec", zap.Error(err))
-		return false, fmt.Errorf("failed to diff Configuration: %w", err)
-	} else if specDiff != "" {
-		logger.Info("Reconciling configuration difff (-desired, +observed):\n", specDiff)
-	}
-	return equality.Semantic.DeepEqual(desiredConfig.Spec, config.Spec) &&
-		equality.Semantic.DeepEqual(desiredConfig.Labels, config.Labels) &&
-		equality.Semantic.DeepEqual(desiredConfig.Annotations, config.Annotations) &&
-		specDiff == "", nil
 }
 
 // SetDefaults implements apis.Defaultable

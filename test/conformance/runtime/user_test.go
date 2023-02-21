@@ -20,11 +20,10 @@ limitations under the License.
 package runtime
 
 import (
-	"context"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"knative.dev/serving/test"
 
 	. "knative.dev/serving/pkg/testing/v1"
@@ -84,25 +83,12 @@ func TestShouldRunAsUserContainerDefault(t *testing.T) {
 		t.Skip("Container.securityContext is not required by Knative Serving API Specification")
 	}
 
-	securityContext := &corev1.SecurityContext{
-		SeccompProfile: &corev1.SeccompProfile{
-			Type: corev1.SeccompProfileTypeUnconfined,
-		},
-	}
 	t.Parallel()
 	clients := test.Setup(t)
-	_, ri, err := fetchRuntimeInfo(t, clients, WithSecurityContext(securityContext))
-	name := test.ObjectNameForTest(t)
+	_, ri, err := fetchRuntimeInfo(t, clients, WithServiceAnnotation(servingv1.SkipSeccompProfileAnnotation, "true"))
 
 	if err != nil {
 		t.Fatal("Error fetching runtime info:", err)
-	}
-
-	cfg, err := clients.ServingClient.Configs.Get(context.Background(), name, metav1.GetOptions{})
-	if err != nil {
-		t.Logf("Failed to get configuration %s: %v", name, err)
-	} else {
-		t.Logf("USERConfiguration: %v", cfg)
 	}
 
 	if ri.Host == nil {

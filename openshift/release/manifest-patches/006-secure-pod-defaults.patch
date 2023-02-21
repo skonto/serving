@@ -7,7 +7,7 @@ index f104c332a..03a30abc5 100644
      app.kubernetes.io/version: "1.7.0"
    annotations:
 -    knative.dev/example-checksum: "4d5feafc"
-+    knative.dev/example-checksum: "e92256d3"
++    knative.dev/example-checksum: "07e3a0bb"
  data:
    _example: |-
      ################################
@@ -19,7 +19,7 @@ index f104c332a..03a30abc5 100644
 +    # if unset.
 +    #
 +    # This value will default to "enabled" in a future release,
-+    # probably Knative 1.9
++    # probably Knative 1.10
 +    secure-pod-defaults: "disabled"
 +
      # Indicates whether multi container support is enabled

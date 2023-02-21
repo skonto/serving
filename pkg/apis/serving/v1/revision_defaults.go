@@ -30,6 +30,8 @@ import (
 	"knative.dev/serving/pkg/apis/config"
 )
 
+const SkipSeccompProfileAnnotation = "serving.knative.openshift.io/skipSeccompProfile"
+
 // SetDefaults implements apis.Defaultable
 func (r *Revision) SetDefaults(ctx context.Context) {
 	// SetDefaults may update revision spec which is immutable.
@@ -37,6 +39,15 @@ func (r *Revision) SetDefaults(ctx context.Context) {
 	if apis.IsInUpdate(ctx) {
 		return
 	}
+
+	if v, ok := r.Annotations["serving.knative.openshift.io"]; ok {
+		if b, err := strconv.ParseBool(v); err == nil {
+			if b {
+				ctx = withSkipSeccompProfile(ctx)
+			}
+		}
+	}
+
 	r.Spec.SetDefaults(apis.WithinSpec(ctx))
 }
 
@@ -73,10 +84,10 @@ func (rs *RevisionSpec) SetDefaults(ctx context.Context) {
 	applyDefaultContainerNames(rs.PodSpec.InitContainers, containerNames, defaultInitContainerName)
 	for idx := range rs.PodSpec.Containers {
 		rs.applyDefault(ctx, &rs.PodSpec.Containers[idx], cfg)
-		rs.defaultSecurityContext(rs.PodSpec.SecurityContext, &rs.PodSpec.Containers[idx], cfg)
+		rs.defaultSecurityContext(ctx, rs.PodSpec.SecurityContext, &rs.PodSpec.Containers[idx], cfg)
 	}
 	for idx := range rs.PodSpec.InitContainers {
-		rs.defaultSecurityContext(rs.PodSpec.SecurityContext, &rs.PodSpec.InitContainers[idx], cfg)
+		rs.defaultSecurityContext(ctx, rs.PodSpec.SecurityContext, &rs.PodSpec.InitContainers[idx], cfg)
 	}
 }
 
@@ -188,7 +199,7 @@ func applyDefaultContainerNames(containers []corev1.Container, containerNames se
 	}
 }
 
-func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, container *corev1.Container, cfg *config.Config) {
+func (rs *RevisionSpec) defaultSecurityContext(ctx context.Context, psc *corev1.PodSecurityContext, container *corev1.Container, cfg *config.Config) {
 	if cfg.Features.SecurePodDefaults != config.Enabled {
 		return
 	}
@@ -207,7 +218,7 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
 
-	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok { // Only apply the profile in 4.11+
+	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !skipSeccompProfile(ctx) { // Only apply the profile in 4.11+
 		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 			if updatedSC.SeccompProfile == nil {
 				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
@@ -239,4 +250,14 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 	if *updatedSC != (corev1.SecurityContext{}) {
 		container.SecurityContext = updatedSC
 	}
+}
+
+type skipSeccompProfileKey struct{}
+
+func withSkipSeccompProfile(ctx context.Context) context.Context {
+	return context.WithValue(ctx, skipSeccompProfileKey{}, struct{}{})
+}
+
+func skipSeccompProfile(ctx context.Context) bool {
+	return ctx.Value(skipSeccompProfileKey{}) != nil
 }

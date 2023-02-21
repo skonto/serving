@@ -68,7 +68,6 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, config *v1.Configuration
 	lcr, err := c.latestCreatedRevision(ctx, config)
 	if errors.IsNotFound(err) {
 		lcr, err = c.createRevision(ctx, config)
-		logger.Debugf("DCreated revision: %v", lcr)
 		if errors.IsAlreadyExists(err) {
 			// Newer revisions with a consistent naming scheme can theoretically hit this
 			// path during normal operation so we don't actually report any failures to
@@ -260,21 +259,12 @@ func CheckNameAvailability(ctx context.Context, config *v1.Configuration, lister
 }
 
 func (c *Reconciler) latestCreatedRevision(ctx context.Context, config *v1.Configuration) (*v1.Revision, error) {
-	logger := logging.FromContext(ctx)
 	if rev, err := CheckNameAvailability(ctx, config, c.revisionLister); rev != nil || err != nil {
-		logger.Debugf("DChecking Revision: %v", rev)
 		return rev, err
 	}
 
 	lister := c.revisionLister.Revisions(config.Namespace)
 
-	l, err := c.client.ServingV1().Revisions(config.Namespace).List(ctx, metav1.ListOptions{})
-
-	if err == nil && l != nil {
-		for _, it := range l.Items {
-			logger.Debugf("Actual revisions: %v", it)
-		}
-	}
 	// Even though we now name revisions consistently and could fetch by name, we have to
 	// keep this code to stay functional for older revisions that predate that change.
 	generationKey := serving.ConfigurationGenerationLabelKey
@@ -284,10 +274,9 @@ func (c *Reconciler) latestCreatedRevision(ctx context.Context, config *v1.Confi
 	}))
 
 	if err == nil && len(list) > 0 {
-		logger.Debugf("Actual revisions list[0]: %v", list[0])
 		return list[0], nil
 	}
-	logger.Debugf("DChecking revision not found for config gen: %s-%s", config.Name, config.Generation)
+
 	return nil, errors.NewNotFound(v1.Resource("revisions"), "revision for "+config.Name)
 }
 
