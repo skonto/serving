@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"knative.dev/pkg/logging"
 	"os"
 	"strconv"
 
@@ -39,10 +40,14 @@ func (r *Revision) SetDefaults(ctx context.Context) {
 	if apis.IsInUpdate(ctx) {
 		return
 	}
-
+	logger := logging.FromContext(ctx)
+	logger.Debugf("DEBREV: %v", *r)
+	logger.Debug("HERE")
 	if v, ok := r.Annotations[SkipSeccompProfileAnnotation]; ok {
+		logger.Debug("HERE1")
 		if b, err := strconv.ParseBool(v); err == nil {
 			if b {
+				logger.Debug("HERE2")
 				ctx = withSkipSeccompProfile(ctx)
 			}
 		}
@@ -217,8 +222,10 @@ func (rs *RevisionSpec) defaultSecurityContext(ctx context.Context, psc *corev1.
 	if updatedSC.AllowPrivilegeEscalation == nil {
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
-
+	logger := logging.FromContext(ctx)
+	logger.Debug("HERE3")
 	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !skipSeccompProfile(ctx) { // Only apply the profile in 4.11+
+		logger.Debug("HERE4")
 		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 			if updatedSC.SeccompProfile == nil {
 				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
