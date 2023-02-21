@@ -40,7 +40,7 @@ func (r *Revision) SetDefaults(ctx context.Context) {
 		return
 	}
 
-	if v, ok := r.Annotations["serving.knative.openshift.io"]; ok {
+	if v, ok := r.Annotations[SkipSeccompProfileAnnotation]; ok {
 		if b, err := strconv.ParseBool(v); err == nil {
 			if b {
 				ctx = withSkipSeccompProfile(ctx)
