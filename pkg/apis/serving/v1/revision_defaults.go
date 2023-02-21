@@ -59,6 +59,17 @@ func (r *Revision) SetDefaults(ctx context.Context) {
 
 // SetDefaults implements apis.Defaultable
 func (rts *RevisionTemplateSpec) SetDefaults(ctx context.Context) {
+	logger := logging.FromContext(ctx)
+	if v, ok := rts.Annotations[SkipSeccompProfileAnnotation]; ok {
+		logger.Debug("HERE1q")
+		if b, err := strconv.ParseBool(v); err == nil {
+			if b {
+				logger.Debug("HERE2q")
+				rts.Spec.SetDefaults(withSkipSeccompProfile(apis.WithinSpec(ctx)))
+				return
+			}
+		}
+	}
 	rts.Spec.SetDefaults(apis.WithinSpec(ctx))
 }
 
