@@ -182,6 +182,15 @@ func WithRevisionTimeoutSeconds(revisionTimeoutSeconds int64) ServiceOption {
 	}
 }
 
+// WithRevisionAnnotation adds the given annotation to the revision.
+func WithRevisionAnnotation(k, v string) ServiceOption {
+	return func(service *v1.Service) {
+		service.Spec.Template.Annotations = kmeta.UnionMaps(service.Spec.Template.Annotations, map[string]string{
+			k: v,
+		})
+	}
+}
+
 // WithRevisionResponseStartTimeoutSeconds sets revision first byte timeout
 func WithRevisionResponseStartTimeoutSeconds(revisionResponseStartTimeoutSeconds int64) ServiceOption {
 	return func(service *v1.Service) {

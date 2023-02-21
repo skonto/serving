@@ -87,7 +87,7 @@ func TestShouldRunAsUserContainerDefault(t *testing.T) {
 
 	t.Parallel()
 	clients := test.Setup(t)
-	_, ri, err := fetchRuntimeInfo(t, clients, WithServiceAnnotation(servingv1.SkipSeccompProfileAnnotation, "true"))
+	_, ri, err := fetchRuntimeInfo(t, clients, WithRevisionAnnotation(servingv1.SkipSeccompProfileAnnotation, "true"))
 
 	if err != nil {
 		t.Fatal("Error fetching runtime info:", err)
