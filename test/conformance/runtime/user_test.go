@@ -20,11 +20,9 @@ limitations under the License.
 package runtime
 
 import (
-	"context"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"knative.dev/serving/test"
 
@@ -91,21 +89,6 @@ func TestShouldRunAsUserContainerDefault(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Error fetching runtime info:", err)
-	}
-
-	name := test.ObjectNameForTest(t)
-	cfg, err := clients.ServingClient.Configs.Get(context.Background(), name, metav1.GetOptions{})
-	if err != nil {
-		t.Logf("Failed to get configuration %s: %v", name, err)
-	} else {
-		t.Logf("USERConfiguration: %v", cfg)
-	}
-
-	rv, err := clients.ServingClient.Revisions.Get(context.Background(), name+"-00001", metav1.GetOptions{})
-	if err != nil {
-		t.Logf("Failed to get revision %s: %v", name+"-00001", err)
-	} else {
-		t.Logf("USERRevision: %v", rv)
 	}
 
 	if ri.Host == nil {

@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"knative.dev/pkg/logging"
 	"os"
 	"strconv"
 
@@ -40,37 +39,12 @@ func (r *Revision) SetDefaults(ctx context.Context) {
 	if apis.IsInUpdate(ctx) {
 		return
 	}
-	logger := logging.FromContext(ctx)
-	logger.Debugf("DEBREV: %v", *r)
-	logger.Debug("HERE")
-	if v, ok := r.Annotations[SkipSeccompProfileAnnotation]; ok {
-		logger.Debug("HERE1")
-		if b, err := strconv.ParseBool(v); err == nil {
-			if b {
-				logger.Debug("HERE2")
-				r.Spec.SetDefaults(withSkipSeccompProfile(apis.WithinSpec(ctx)))
-				return
-			}
-		}
-	}
-
-	r.Spec.SetDefaults(apis.WithinSpec(ctx))
+	r.Spec.SetDefaults(MaybeSkipSeccompProfile(apis.WithinSpec(ctx), r.Annotations))
 }
 
 // SetDefaults implements apis.Defaultable
 func (rts *RevisionTemplateSpec) SetDefaults(ctx context.Context) {
-	logger := logging.FromContext(ctx)
-	if v, ok := rts.Annotations[SkipSeccompProfileAnnotation]; ok {
-		logger.Debug("HERE1q")
-		if b, err := strconv.ParseBool(v); err == nil {
-			if b {
-				logger.Debug("HERE2q")
-				rts.Spec.SetDefaults(withSkipSeccompProfile(apis.WithinSpec(ctx)))
-				return
-			}
-		}
-	}
-	rts.Spec.SetDefaults(apis.WithinSpec(ctx))
+	rts.Spec.SetDefaults(MaybeSkipSeccompProfile(apis.WithinSpec(ctx), rts.Annotations))
 }
 
 // SetDefaults implements apis.Defaultable
@@ -234,10 +208,8 @@ func (rs *RevisionSpec) defaultSecurityContext(ctx context.Context, psc *corev1.
 	if updatedSC.AllowPrivilegeEscalation == nil {
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
-	logger := logging.FromContext(ctx)
-	logger.Debug("HERE3")
+
 	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !skipSeccompProfile(ctx) { // Only apply the profile in 4.11+
-		logger.Debug("HERE4")
 		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 			if updatedSC.SeccompProfile == nil {
 				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
@@ -247,7 +219,6 @@ func (rs *RevisionSpec) defaultSecurityContext(ctx context.Context, psc *corev1.
 			}
 		}
 	}
-
 	if updatedSC.Capabilities == nil {
 		updatedSC.Capabilities = &corev1.Capabilities{}
 		updatedSC.Capabilities.Drop = []corev1.Capability{"ALL"}
@@ -279,4 +250,15 @@ func withSkipSeccompProfile(ctx context.Context) context.Context {
 
 func skipSeccompProfile(ctx context.Context) bool {
 	return ctx.Value(skipSeccompProfileKey{}) != nil
+}
+
+func MaybeSkipSeccompProfile(ctx context.Context, annotations map[string]string) context.Context {
+	if v, ok := annotations[SkipSeccompProfileAnnotation]; ok {
+		if b, err := strconv.ParseBool(v); err == nil {
+			if b {
+				return withSkipSeccompProfile(ctx)
+			}
+		}
+	}
+	return ctx
 }
