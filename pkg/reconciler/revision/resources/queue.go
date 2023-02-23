@@ -19,6 +19,7 @@ package resources
 import (
 	"fmt"
 	"math"
+	"os"
 	"path"
 	"strconv"
 
@@ -259,6 +260,23 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 		}
 	}
 
+	psc := rev.Spec.PodSpec.SecurityContext
+	if psc == nil {
+		psc = &corev1.PodSecurityContext{}
+	}
+	updatedSC := queueSecurityContext
+
+	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok { // Only apply the profile in 4.11+
+		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
+			if updatedSC.SeccompProfile == nil {
+				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
+			}
+			if updatedSC.SeccompProfile.Type == "" {
+				updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
+			}
+		}
+	}
+
 	c := &corev1.Container{
 		Name:            QueueContainerName,
 		Image:           cfg.Deployment.QueueSidecarImage,
@@ -266,7 +284,7 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 		Ports:           ports,
 		StartupProbe:    execProbe,
 		ReadinessProbe:  httpProbe,
-		SecurityContext: queueSecurityContext,
+		SecurityContext: updatedSC,
 		Env: []corev1.EnvVar{{
 			Name:  "SERVING_NAMESPACE",
 			Value: rev.Namespace,
