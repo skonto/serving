@@ -266,7 +266,16 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 	}
 	updatedSC := queueSecurityContext
 
-	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok { // Only apply the profile in 4.11+
+	shouldSkipSeccompProfile := false
+	if v, ok := rev.GetAnnotations()[v1.SkipSeccompProfileAnnotation]; ok {
+		if b, err := strconv.ParseBool(v); err == nil {
+			if b {
+				shouldSkipSeccompProfile = true
+			}
+		}
+	}
+
+	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !shouldSkipSeccompProfile { // Only apply the profile in 4.11+
 		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 			if updatedSC.SeccompProfile == nil {
 				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
