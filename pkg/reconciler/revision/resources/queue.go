@@ -18,10 +18,12 @@ package resources
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -265,11 +267,11 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 		psc = &corev1.PodSecurityContext{}
 	}
 	updatedSC := queueSecurityContext
-
 	shouldSkipSeccompProfile := false
 	if v, ok := rev.GetAnnotations()[v1.SkipSeccompProfileAnnotation]; ok {
 		if b, err := strconv.ParseBool(v); err == nil {
 			if b {
+				log.Println("HERE")
 				shouldSkipSeccompProfile = true
 			}
 		}
@@ -284,6 +286,14 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 				updatedSC.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
 			}
 		}
+	}
+
+	if strings.HasPrefix(rev.Name, "should") {
+		p, _ := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC")
+		log.Printf("UpdatedSC: %v\n", updatedSC)
+		log.Printf("rev: %v\n", rev)
+		log.Printf("shouldSkipSeccompProfile: %v\n", shouldSkipSeccompProfile)
+		log.Printf("OCP_SECCOMP_PROFILE_WITHOUT_SCC\": %q\n", p)
 	}
 
 	c := &corev1.Container{
