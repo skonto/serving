@@ -216,19 +216,8 @@ spec:
     kourier:
       service-type: "LoadBalancer" # To enable gRPC and HTTP2 tests without OCP Route.
   config:
-    features:
-      secure-pod-defaults: "enabled"
     deployment:
       progressDeadline: "120s"
-    logging:
-      loglevel.activator: "debug"
-      loglevel.autoscaler: "debug"
-      loglevel.controller: "debug"
-      loglevel.queueproxy: "debug"
-      loglevel.webhook: "debug"
-      loglevel.hpaautoscaler: "debug"
-      loglevel.domainmapping: "debug"
-      loglevel.domainmapping-webhook: "debug"
     observability:
       logging.request-log-template: '{"httpRequest": {"requestMethod": "{{.Request.Method}}",
         "requestUrl": "{{js .Request.RequestURI}}", "requestSize": "{{.Request.ContentLength}}",
@@ -334,6 +323,9 @@ function run_e2e_tests(){
   sleep 30
   subdomain=$(oc get ingresses.config.openshift.io cluster  -o jsonpath="{.spec.domain}")
 
+  // Enable secure pod defaults for all tests.
+  oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"secure-pod-defaults": "enabled"}}}}' || fail_test
+
   if [ -n "$test_name" ]; then
     oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-volumes-emptydir": "enabled"}}}}' || fail_test
     go_test_e2e -tags=e2e -timeout=15m -parallel=1 \
@@ -361,7 +353,6 @@ function run_e2e_tests(){
   fi
 
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-volumes-emptydir": "enabled"}}}}' || fail_test
-  oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"secure-pod-defaults": "enabled"}}}}' || fail_test
   go_test_e2e -tags=e2e -timeout=30m -parallel=$parallel \
     ./test/e2e ./test/conformance/api/... ./test/conformance/runtime/... \
     --kubeconfig "$KUBECONFIG" \
