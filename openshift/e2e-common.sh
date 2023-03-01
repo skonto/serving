@@ -288,8 +288,6 @@ function prepare_knative_serving_tests_nightly {
   # Apply persistent volume claim needed, needed for the related e2e test.
   oc apply -f ./test/config/pvc/pvc.yaml
 
-#  oc adm policy add-scc-to-user privileged -z default -n serving-tests
-#  oc adm policy add-scc-to-user privileged -z default -n serving-tests-alt
   # Adding scc for anyuid to test TestShouldRunAsUserContainerDefault.
   oc adm policy add-scc-to-user anyuid -z default -n serving-tests
 
@@ -440,15 +438,6 @@ function run_e2e_tests(){
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-persistent-volume-write": "disabled"}}}}' || fail_test
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"kubernetes.podspec-securitycontext": "disabled"}}}}' || fail_test
 
-  # RUN secure pod defaults test in a separate install.
-  go_test_e2e -timeout=3m ./test/e2e/securedefaults  \
-    --kubeconfig "$KUBECONFIG" \
-    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
-    --enable-alpha \
-    --https \
-    --skip-cleanup-on-fail \
-    --resolvabledomain || failed=1
-
   # Run the helloworld test with an image pulled into the internal registry.
   local image_to_tag=$KNATIVE_SERVING_TEST_HELLOWORLD
   oc tag -n serving-tests "$image_to_tag" "helloworld:latest" --reference-policy=local
@@ -515,6 +504,20 @@ function run_e2e_tests(){
     --https \
     --skip-cleanup-on-fail \
     --resolvabledomain || failed=1
+
+
+  # Allow to use seccompProfile and other settings on all OCP versions.
+  oc adm policy add-scc-to-user privileged -z default -n serving-tests
+
+  # RUN secure pod defaults test in a separate install.
+  go_test_e2e -timeout=3m ./test/e2e/securedefaults  \
+    --kubeconfig "$KUBECONFIG" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+    --enable-alpha \
+    --https \
+    --skip-cleanup-on-fail \
+    --resolvabledomain || failed=1
+
 
   return $failed
 }
