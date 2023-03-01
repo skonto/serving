@@ -288,8 +288,8 @@ function prepare_knative_serving_tests_nightly {
   # Apply persistent volume claim needed, needed for the related e2e test.
   oc apply -f ./test/config/pvc/pvc.yaml
 
-  oc adm policy add-scc-to-user privileged -z default -n serving-tests
-  oc adm policy add-scc-to-user privileged -z default -n serving-tests-alt
+#  oc adm policy add-scc-to-user privileged -z default -n serving-tests
+#  oc adm policy add-scc-to-user privileged -z default -n serving-tests-alt
   # Adding scc for anyuid to test TestShouldRunAsUserContainerDefault.
   oc adm policy add-scc-to-user anyuid -z default -n serving-tests
 
