@@ -51,7 +51,7 @@ func TestMustRunAsUser(t *testing.T) {
 
 	// We need to modify the working dir because the specified user cannot access the
 	// default user's working dir.
-	_, ri, err := fetchRuntimeInfo(t, clients, WithSecurityContext(securityContext), WithWorkingDir("/"))
+	_, ri, err := fetchRuntimeInfo(t, clients, WithSecurityContext(securityContext), WithWorkingDir("/"), WithRevisionAnnotation(servingv1.SkipSeccompProfileAnnotation, "true"))
 	if err != nil {
 		t.Fatal("Error fetching runtime info:", err)
 	}

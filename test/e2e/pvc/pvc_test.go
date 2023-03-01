@@ -27,6 +27,7 @@ import (
 	"knative.dev/pkg/ptr"
 	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/spoof"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	. "knative.dev/serving/pkg/testing/v1"
 	"knative.dev/serving/test"
 	v1test "knative.dev/serving/test/v1"
@@ -65,7 +66,9 @@ func TestPersistentVolumeClaims(t *testing.T) {
 		FSGroup: ptr.Int64(unprivilegedUserID),
 	})
 
-	resources, err := v1test.CreateServiceReady(t, clients, &names, withVolume, withPodSecurityContext)
+	withRevisionAnnotation := WithRevisionAnnotation(servingv1.SkipSeccompProfileAnnotation, "true")
+
+	resources, err := v1test.CreateServiceReady(t, clients, &names, withVolume, withPodSecurityContext, withRevisionAnnotation)
 	if err != nil {
 		t.Fatalf("Failed to create initial Service: %v: %v", names.Service, err)
 	}
