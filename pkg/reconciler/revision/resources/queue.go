@@ -395,7 +395,7 @@ func makeQueueContainer(rev *v1.Revision, cfg *config.Config) (*corev1.Container
 		}
 	}
 
-	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !shouldSkipSeccompProfile { // Only apply the profile in 4.11+
+	if _, ok := os.LookupEnv("KNATIVE_SET_SECCOMP_PROFILE_BY_DEFAULT_ON_THIS_OCP_VERSION"); ok && !shouldSkipSeccompProfile { // Only apply the profile in 4.11+
 		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 			updatedSC = &corev1.SecurityContext{
 				AllowPrivilegeEscalation: ptr.Bool(false),

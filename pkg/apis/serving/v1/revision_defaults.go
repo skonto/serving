@@ -209,7 +209,7 @@ func (rs *RevisionSpec) defaultSecurityContext(ctx context.Context, psc *corev1.
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
 
-	if _, ok := os.LookupEnv("OCP_SECCOMP_PROFILE_WITHOUT_SCC"); ok && !skipSeccompProfile(ctx) { // Only apply the profile in 4.11+
+	if _, ok := os.LookupEnv("KNATIVE_SET_SECCOMP_PROFILE_BY_DEFAULT_ON_THIS_OCP_VERSION"); ok && !skipSeccompProfile(ctx) { // Only apply the profile in 4.11+
 		if psc.SeccompProfile == nil || psc.SeccompProfile.Type == "" {
 			if updatedSC.SeccompProfile == nil {
 				updatedSC.SeccompProfile = &corev1.SeccompProfile{}
