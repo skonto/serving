@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/pkg/injection"
 	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/spoof"
 	"knative.dev/serving/pkg/apis/autoscaling"
@@ -249,14 +250,28 @@ func waitForScaleToOne(t *testing.T, deploymentName string, clients *test.Client
 
 func waitForHPAState(t *testing.T, name, namespace string, clients *test.Clients) error {
 	return wait.PollImmediate(time.Second, 15*time.Minute, func() (bool, error) {
-		hpa, err := clients.KubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(namespace).Get(context.Background(), name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
+		// Starting from 4.10 (1.24.0) we can use the new API version (autoscaling/v2) of HorizontalPodAutoscaler
+		// As we also need to support 4.8 we also need provide the controller using the old API version (autoscaling/v2beta2)
+		if err := injection.CheckMinimumVersion(clients.KubeClient.Discovery(), "1.24.0"); err == nil {
+			hpa, err := clients.KubeClient.AutoscalingV2().HorizontalPodAutoscalers(namespace).Get(context.Background(), name, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+			if hpa.Status.CurrentMetrics == nil {
+				t.Logf("Waiting for hpa.status is available: %#v", hpa.Status)
+				return false, nil
+			}
+			return true, nil
+		} else {
+			hpa, err := clients.KubeClient.AutoscalingV2beta2().HorizontalPodAutoscalers(namespace).Get(context.Background(), name, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+			if hpa.Status.CurrentMetrics == nil {
+				t.Logf("Waiting for hpa.status is available: %#v", hpa.Status)
+				return false, nil
+			}
+			return true, nil
 		}
-		if hpa.Status.CurrentMetrics == nil {
-			t.Logf("Waiting for hpa.status is available: %#v", hpa.Status)
-			return false, nil
-		}
-		return true, nil
 	})
 }
