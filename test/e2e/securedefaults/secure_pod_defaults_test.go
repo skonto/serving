@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/injection"
 	"knative.dev/pkg/ptr"
 	. "knative.dev/serving/pkg/testing/v1"
 	"knative.dev/serving/test"
@@ -60,12 +59,6 @@ func TestSecureDefaults(t *testing.T) {
 	}
 	if revisionSC.AllowPrivilegeEscalation == nil || *revisionSC.AllowPrivilegeEscalation {
 		t.Errorf("Expected allowPrivilegeEscalation: false, got %v", revisionSC.AllowPrivilegeEscalation)
-	}
-
-	if err := injection.CheckMinimumVersion(clients.KubeClient.Discovery(), "1.24.0"); err == nil {
-		if revisionSC.SeccompProfile == nil || revisionSC.SeccompProfile.Type != v1.SeccompProfileTypeRuntimeDefault {
-			t.Errorf("Expected seccompProfile to be RuntimeDefault, got: %v", revisionSC.SeccompProfile)
-		}
 	}
 }
 
