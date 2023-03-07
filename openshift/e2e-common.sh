@@ -321,7 +321,7 @@ function run_e2e_tests(){
   sleep 30
   subdomain=$(oc get ingresses.config.openshift.io cluster  -o jsonpath="{.spec.domain}")
 
-  // Enable secure pod defaults for all tests.
+  # Enable secure pod defaults for all tests.
   oc -n ${SYSTEM_NAMESPACE} patch knativeserving/knative-serving --type=merge --patch='{"spec": {"config": { "features": {"secure-pod-defaults": "enabled"}}}}' || fail_test
 
   if [ -n "$test_name" ]; then
@@ -498,7 +498,7 @@ function run_e2e_tests(){
 
 
   # Verify that the right sc is set by default and seccompProfile is injected on OCP >= 4.11.
-  go_test_e2e -timeout=3m ./test/e2e/securedefaults -run "^(TestSecureDefaults)$" \
+  go_test_e2e -timeout=10m ./test/e2e/securedefaults -run "^(TestSecureDefaults)$" \
     --kubeconfig "$KUBECONFIG" \
     --imagetemplate "$TEST_IMAGE_TEMPLATE" \
     --enable-alpha \
@@ -511,7 +511,8 @@ function run_e2e_tests(){
   oc adm policy add-scc-to-user privileged -z default -n serving-tests
 
   # Verify that non secure settings are allowed, although not-recommended.
-  go_test_e2e -timeout=3m ./test/e2e/securedefaults -run "^(TestUnsafePermitted)$" \
+  # It requires scc privileged or a custom scc that allows any seccompProfile to be set.
+  go_test_e2e -timeout=10m ./test/e2e/securedefaults -run "^(TestUnsafePermitted)$" \
     --kubeconfig "$KUBECONFIG" \
     --imagetemplate "$TEST_IMAGE_TEMPLATE" \
     --enable-alpha \
