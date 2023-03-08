@@ -1,4 +1,5 @@
-# Copyright 2020 The Knative Authors
+---
+# Copyright 2019 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,25 +16,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: domain-mapping
+  name: autoscaler-hpa
   namespace: knative-serving
   labels:
-    app.kubernetes.io/component: domain-mapping
+    autoscaling.knative.dev/autoscaler-provider: hpa
+    app.kubernetes.io/component: autoscaler-hpa
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: devel
+    app.kubernetes.io/version: "1.7.0"
 spec:
   selector:
     matchLabels:
-      app: domain-mapping
+      app: autoscaler-hpa
   template:
     metadata:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
       labels:
-        app: domain-mapping
-        app.kubernetes.io/component: domain-mapping
+        app: autoscaler-hpa
+        app.kubernetes.io/component: autoscaler-hpa
         app.kubernetes.io/name: knative-serving
-        app.kubernetes.io/version: devel
+        app.kubernetes.io/version: "1.7.0"
     spec:
       # To avoid node becoming SPOF, spread our replicas to different nodes.
       affinity:
@@ -42,16 +44,16 @@ spec:
           - podAffinityTerm:
               labelSelector:
                 matchLabels:
-                  app: domain-mapping
+                  app: autoscaler-hpa
               topologyKey: kubernetes.io/hostname
             weight: 100
 
       serviceAccountName: controller
       containers:
-      - name: domain-mapping
+      - name: autoscaler-hpa
         # This is the Go import path for the binary that is containerized
         # and substituted here.
-        image: ko://knative.dev/serving/cmd/domain-mapping
+        image: ko://knative.dev/serving/cmd/autoscaler-hpa
 
         resources:
           requests:
@@ -81,7 +83,7 @@ spec:
           runAsNonRoot: true
           capabilities:
             drop:
-              - ALL
+            - ALL
 
         livenessProbe:
           httpGet:
@@ -105,3 +107,27 @@ spec:
           containerPort: 8008
         - name: probes
           containerPort: 8080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: autoscaler-hpa
+    autoscaling.knative.dev/autoscaler-provider: hpa
+    app.kubernetes.io/component: autoscaler-hpa
+    app.kubernetes.io/name: knative-serving
+    app.kubernetes.io/version: "1.7.0"
+  name: autoscaler-hpa
+  namespace: knative-serving
+spec:
+  ports:
+  # Define metrics and profiling for them to be accessible within service meshes.
+  - name: http-metrics
+    port: 9090
+    targetPort: 9090
+  - name: http-profiling
+    port: 8008
+    targetPort: 8008
+  selector:
+    app: autoscaler-hpa
