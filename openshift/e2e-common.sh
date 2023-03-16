@@ -109,7 +109,7 @@ function install_serverless(){
   # Use the absolute path for KNATIVE_SERVING_MANIFESTS_DIR. It is used in `make generated-files`.
   export KNATIVE_SERVING_MANIFESTS_DIR="$(pwd)/openshift/release/artifacts"
 
-  git clone --depth 1 https://github.com/openshift-knative/serverless-operator.git ${SERVERLESS_DIR}
+  git clone --depth 1 --branch test_sum https://github.com/skonto/serverless-operator.git ${SERVERLESS_DIR}
   pushd ${SERVERLESS_DIR}
 
   source ./test/lib.bash
