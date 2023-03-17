@@ -675,7 +675,7 @@ func CapabilitiesMask(ctx context.Context, in *corev1.Capabilities) *corev1.Capa
 	// Allowed fields
 	out.Drop = in.Drop
 
-	if config.FromContextOrDefaults(ctx).Features.ContainerSpecAddCapabilities != config.Disabled {
+	if config.FromContextOrDefaults(ctx).Features.ContainerSpecAddCapabilities != config.Disabled || config.FromContextOrDefaults(ctx).Features.SecurePodDefaults != config.Disabled {
 		out.Add = in.Add
 	}
 
