@@ -206,11 +206,6 @@ func (rs *RevisionSpec) defaultSecurityContext(psc *corev1.PodSecurityContext, c
 		updatedSC.AllowPrivilegeEscalation = ptr.Bool(false)
 	}
 
-	if updatedSC.Capabilities == nil {
-		updatedSC.Capabilities = &corev1.Capabilities{}
-		updatedSC.Capabilities.Drop = []corev1.Capability{"ALL"}
-	}
-
 	if *updatedSC != (corev1.SecurityContext{}) {
 		container.SecurityContext = updatedSC
 	}

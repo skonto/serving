@@ -901,18 +901,12 @@ func TestRevisionDefaulting(t *testing.T) {
 						Resources:      defaultResources,
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: ptr.Bool(false),
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-							},
 						},
 					}, {
 						Name:      "sidecar",
 						Resources: defaultResources,
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: ptr.Bool(false),
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-							},
 						},
 					}, {
 						Name:      "special-sidecar",
@@ -991,18 +985,12 @@ func TestRevisionDefaulting(t *testing.T) {
 						Resources:      defaultResources,
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: ptr.Bool(false),
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-							},
 						},
 					}},
 					InitContainers: []corev1.Container{{
 						Name: "init",
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: ptr.Bool(false),
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-							},
 						},
 					}},
 					SecurityContext: &corev1.PodSecurityContext{
