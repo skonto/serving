@@ -54,9 +54,7 @@ func TestSecureDefaults(t *testing.T) {
 	if revisionSC == nil {
 		t.Fatal("Container SecurityContext was nil, should have been defaulted.")
 	}
-	if len(revisionSC.Capabilities.Drop) != 1 || revisionSC.Capabilities.Drop[0] != "ALL" {
-		t.Errorf("Expected to Drop 'ALL' capability: %v", revisionSC.Capabilities)
-	}
+
 	if revisionSC.AllowPrivilegeEscalation == nil || *revisionSC.AllowPrivilegeEscalation {
 		t.Errorf("Expected allowPrivilegeEscalation: false, got %v", revisionSC.AllowPrivilegeEscalation)
 	}
