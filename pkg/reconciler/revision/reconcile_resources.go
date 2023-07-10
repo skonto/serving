@@ -81,6 +81,7 @@ func (c *Reconciler) reconcileDeployment(ctx context.Context, rev *v1.Revision) 
 
 	// If a container keeps crashing (no active pods in the deployment although we want some)
 	if *deployment.Spec.Replicas > 0 && deployment.Status.AvailableReplicas == 0 {
+		logger.Infof("Debug: container keeps crashing, deployment.Spec.Replicas: %d, deployment.Status.AvailableReplicas: %d", *deployment.Spec.Replicas, deployment.Status.AvailableReplicas)
 		pods, err := c.kubeclient.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: metav1.FormatLabelSelector(deployment.Spec.Selector)})
 		if err != nil {
 			logger.Errorw("Error getting pods", zap.Error(err))
@@ -101,6 +102,7 @@ func (c *Reconciler) reconcileDeployment(ctx context.Context, rev *v1.Revision) 
 
 			for _, status := range pod.Status.ContainerStatuses {
 				if status.Name == rev.Spec.GetContainer().Name {
+					logger.Info("Debug: checking container statuses")
 					if t := status.LastTerminationState.Terminated; t != nil {
 						logger.Infof("marking exiting with: %d/%s", t.ExitCode, t.Message)
 						if t.ExitCode == 0 && t.Message == "" {
@@ -110,9 +112,12 @@ func (c *Reconciler) reconcileDeployment(ctx context.Context, rev *v1.Revision) 
 						} else {
 							rev.Status.MarkContainerHealthyFalse(v1.ExitCodeReason(t.ExitCode), v1.RevisionContainerExitingMessage(t.Message))
 						}
-					} else if w := status.State.Waiting; w != nil && hasDeploymentTimedOut(deployment) {
-						logger.Infof("marking resources unavailable with: %s: %s", w.Reason, w.Message)
-						rev.Status.MarkResourcesAvailableFalse(w.Reason, w.Message)
+					} else if w := status.State.Waiting; w != nil {
+						logger.Infof("Debug: checking container statuses with not nil waiting status: %v", w)
+						if hasDeploymentTimedOut(ctx, deployment) {
+							logger.Infof("Debug: marking resources unavailable with: %s: %s", w.Reason, w.Message)
+							rev.Status.MarkResourcesAvailableFalse(w.Reason, w.Message)
+						}
 					}
 					break
 				}
@@ -185,9 +190,12 @@ func (c *Reconciler) reconcilePA(ctx context.Context, rev *v1.Revision) error {
 	return nil
 }
 
-func hasDeploymentTimedOut(deployment *appsv1.Deployment) bool {
+func hasDeploymentTimedOut(ctx context.Context, deployment *appsv1.Deployment) bool {
+	logger := logging.FromContext(ctx)
+	logger.Info("Debug: checking if deployment has progressed")
 	// as per https://kubernetes.io/docs/concepts/workloads/controllers/deployment
 	for _, cond := range deployment.Status.Conditions {
+		logger.Infof("Debug: checking if deployment has progressed with cond: %v", cond)
 		// Look for a condition with status False
 		if cond.Status != corev1.ConditionFalse {
 			continue
