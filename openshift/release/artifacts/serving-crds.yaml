@@ -19,7 +19,7 @@ metadata:
   name: images.caching.internal.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: caching.internal.knative.dev
@@ -140,7 +140,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -288,7 +288,7 @@ metadata:
   name: configurations.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
     duck.knative.dev/podspecable: "true"
 spec:
@@ -533,7 +533,7 @@ spec:
                                             - value
                                           properties:
                                             name:
-                                              description: The header field name
+                                              description: The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
                                               type: string
                                             value:
                                               description: The header field value
@@ -641,7 +641,7 @@ spec:
                                             - value
                                           properties:
                                             name:
-                                              description: The header field name
+                                              description: The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
                                               type: string
                                             value:
                                               description: The header field value
@@ -691,6 +691,21 @@ spec:
                                 description: 'Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                 type: object
                                 properties:
+                                  claims:
+                                    description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+                                    type: array
+                                    items:
+                                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                                      type: object
+                                      required:
+                                        - name
+                                      properties:
+                                        name:
+                                          description: Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
+                                          type: string
+                                    x-kubernetes-list-map-keys:
+                                      - name
+                                    x-kubernetes-list-type: map
                                   limits:
                                     description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                     type: object
@@ -1178,7 +1193,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -1241,14 +1256,14 @@ metadata:
   name: domainmappings.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: serving.knative.dev
   versions:
     - name: v1beta1
       served: true
-      storage: false
+      storage: true
       subresources:
         status: {}
       additionalPrinterColumns:
@@ -1372,7 +1387,9 @@ spec:
                   type: string
     - name: v1alpha1
       served: true
-      storage: true
+      storage: false
+      deprecated: true
+      deprecationWarning: The v1alpha1 version of DomainMapping has been deprecated and will be removed in a future release of the API. Please upgrade to v1beta1
       subresources:
         status: {}
       schema:
@@ -1527,7 +1544,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -1786,7 +1803,7 @@ metadata:
   name: metrics.autoscaling.internal.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: autoscaling.internal.knative.dev
@@ -1907,7 +1924,7 @@ metadata:
   name: podautoscalers.autoscaling.internal.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: autoscaling.internal.knative.dev
@@ -2066,7 +2083,7 @@ metadata:
   name: revisions.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: serving.knative.dev
@@ -2290,7 +2307,7 @@ spec:
                                     - value
                                   properties:
                                     name:
-                                      description: The header field name
+                                      description: The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
                                       type: string
                                     value:
                                       description: The header field value
@@ -2398,7 +2415,7 @@ spec:
                                     - value
                                   properties:
                                     name:
-                                      description: The header field name
+                                      description: The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
                                       type: string
                                     value:
                                       description: The header field value
@@ -2448,6 +2465,21 @@ spec:
                         description: 'Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                         type: object
                         properties:
+                          claims:
+                            description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+                            type: array
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              type: object
+                              required:
+                                - name
+                              properties:
+                                name:
+                                  description: Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
+                                  type: string
+                            x-kubernetes-list-map-keys:
+                              - name
+                            x-kubernetes-list-type: map
                           limits:
                             description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                             type: object
@@ -2963,7 +2995,7 @@ metadata:
   name: routes.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
 spec:
@@ -3142,7 +3174,7 @@ metadata:
   labels:
     app.kubernetes.io/name: knative-serving
     app.kubernetes.io/component: networking
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
 spec:
   group: networking.internal.knative.dev
@@ -3307,7 +3339,7 @@ metadata:
   name: services.serving.knative.dev
   labels:
     app.kubernetes.io/name: knative-serving
-    app.kubernetes.io/version: "release-v1.10"
+    app.kubernetes.io/version: "release-v1.11"
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
     duck.knative.dev/podspecable: "true"
@@ -3556,7 +3588,7 @@ spec:
                                             - value
                                           properties:
                                             name:
-                                              description: The header field name
+                                              description: The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
                                               type: string
                                             value:
                                               description: The header field value
@@ -3664,7 +3696,7 @@ spec:
                                             - value
                                           properties:
                                             name:
-                                              description: The header field name
+                                              description: The header field name. This will be canonicalized upon output, so case-variant names will be understood as the same header.
                                               type: string
                                             value:
                                               description: The header field value
@@ -3714,6 +3746,21 @@ spec:
                                 description: 'Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                 type: object
                                 properties:
+                                  claims:
+                                    description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+                                    type: array
+                                    items:
+                                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                                      type: object
+                                      required:
+                                        - name
+                                      properties:
+                                        name:
+                                          description: Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
+                                          type: string
+                                    x-kubernetes-list-map-keys:
+                                      - name
+                                    x-kubernetes-list-type: map
                                   limits:
                                     description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                     type: object
