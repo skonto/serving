@@ -315,8 +315,17 @@ func MainWithConfig(ctx context.Context, component string, cfg *rest.Config, cto
 
 	// Setup default health checks to catch issues with cache sync etc.
 	if !healthProbesDisabled(ctx) {
+		port := injection.HealthCheckDefaultPort
+		// Allow to override the default healthcheck port
+		if val, ok := os.LookupEnv("K_HEALTH_CHECK_PORT"); ok {
+			port, err = strconv.Atoi(val)
+			if err != nil {
+				log.Fatalf("failed to parse value %q of K_HEALTH_CHECK_PORT: %v\n", val, err)
+			}
+		}
+
 		eg.Go(func() error {
-			return injection.ServeHealthProbes(ctx, injection.HealthCheckDefaultPort)
+			return injection.ServeHealthProbes(ctx, port)
 		})
 	}
 
