@@ -75,6 +75,8 @@ spec:
         # TODO(https://github.com/knative/pkg/pull/953): Remove stackdriver specific config
         - name: METRICS_DOMAIN
           value: knative.dev/internal/serving
+        - name: K_AUTOSCALER_SERVICE
+          value: controller
 
         securityContext:
           allowPrivilegeEscalation: false

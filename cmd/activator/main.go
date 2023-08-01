@@ -196,7 +196,14 @@ func main() {
 	defer close(statCh)
 
 	// Open a WebSocket connection to the autoscaler.
-	autoscalerEndpoint := "ws://" + pkgnet.GetServiceHostname("controller", system.Namespace()) + autoscalerPort
+	autoscalerSrv := "autoscaler"
+	if val, ok := os.LookupEnv("K_AUTOSCALER_SERVICE"); ok {
+		if val != "autoscaler" && val != "controller" {
+			log.Fatalf("wrong value %q for K_AUTOSCALER_SERVICE should be either autoscaler or controller: %v\n", val, err)
+		}
+		autoscalerSrv = val
+	}
+	autoscalerEndpoint := "ws://" + pkgnet.GetServiceHostname(autoscalerSrv, system.Namespace()) + autoscalerPort
 	logger.Info("Connecting to Autoscaler at ", autoscalerEndpoint)
 	statSink := websocket.NewDurableSendingConnection(autoscalerEndpoint, logger)
 	defer statSink.Shutdown()
