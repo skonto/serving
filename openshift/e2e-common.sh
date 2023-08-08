@@ -169,9 +169,8 @@ function install_knative(){
 
   # TODO: Only one cluster enables internal-tls but it should be enabled by default when the feature is stable.
   if [[ ${ENABLE_INTERNAL_TLS:-} == "true" ]]; then
-    oc patch knativeserving knative-serving \
-        -n "${SERVING_NAMESPACE}" \
-        --type merge --patch '{"spec": {"config": {"network": {"internal-encryption": "true"}}}}'
+    configure_cm network internal-encryption:true || fail_test
+    # As config-kourier is in ingress namespace, don't use configure_cm.
     oc patch knativeserving knative-serving \
         -n "${SERVING_NAMESPACE}" \
         --type merge --patch '{"spec": {"config": {"kourier": {"cluster-cert-secret": "server-certs"}}}}'
@@ -182,6 +181,13 @@ function install_knative(){
     oc delete pod -n ${SERVING_NAMESPACE} -l app=activator
     oc wait --timeout=60s --for=condition=Available deployment  -n ${SERVING_NAMESPACE} activator
     echo "internal-encryption is enabled"
+  else
+    # disable internal-encryption. S-O repo would enable by default.
+    configure_cm network internal-encryption:false || fail_test
+    echo "Restart activator to unmount the certificates"
+    oc delete pod -n ${SERVING_NAMESPACE} -l app=activator
+    oc wait --timeout=60s --for=condition=Available deployment  -n ${SERVING_NAMESPACE} activator
+    echo "internal-encryption is disabled"
   fi
 
   header "Knative Installed successfully"
