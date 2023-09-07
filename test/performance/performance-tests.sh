@@ -28,16 +28,9 @@
 
 source $(dirname "$0")/../e2e-common.sh
 
-<<<<<<< HEAD
-# Skip installing istio as an add-on.
-# Temporarily increasing the cluster size for serving tests to rule out
-# resource/eviction as causes of flakiness.
-initialize --skip-istio-addon --min-nodes=4 --max-nodes=4 --perf --cluster-version=1.24 "$@"
-=======
 set -o errexit
 set -o nounset
 set -o pipefail
->>>>>>> ccad5f88e (Update performance tests)
 
 declare PROW_TAG
 declare PROW_JOB_ID

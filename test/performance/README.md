@@ -47,9 +47,6 @@ Knative Serving has different benchmarking scenarios:
 * [scale-from-zero](./benchmarks/scale-from-zero): Measures the latency of scaling 1, 5, 25 and 100 Knative Services from zero in parallel.
 
 
-<<<<<<< HEAD
-Running `performance-tests.sh` runs performance tests using [kperf](https://github.com/knative-sandbox/kperf)
-=======
 ## Running the benchmarks
 
 ### Local InfluxDB setup
@@ -115,4 +112,3 @@ Check out what the [script](./performance-tests.sh) does. Basically just run:
 ```bash
 sed "s|@SYSTEM_NAMESPACE@|$SYSTEM_NAMESPACE|g" <your-benchmark-job.yaml> | sed "s|@KO_DOCKER_REPO@|$KO_DOCKER_REPO|g" | ko apply --sbom=none -Bf -
 ```
->>>>>>> ccad5f88e (Update performance tests)

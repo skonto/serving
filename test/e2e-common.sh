@@ -35,13 +35,7 @@ export HTTPS=0
 export SHORT=0
 export ENABLE_HA=0
 export ENABLE_TLS=${ENABLE_TLS:-0}
-<<<<<<< HEAD
-export MESH=0
-export PERF=0
-=======
 export MESH=${MESH:-0}
-export AMBIENT=${AMBIENT:-0}
->>>>>>> ccad5f88e (Update performance tests)
 export KIND=${KIND:-0}
 export CLUSTER_DOMAIN=${CLUSTER_DOMAIN:-cluster.local}
 
