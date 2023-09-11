@@ -51,6 +51,16 @@ func NewESReporter(tags map[string]string, indexerType indexers2.IndexerType, in
 	if err != nil {
 		return nil, err
 	}
+
+	buildID, found := os.LookupEnv(buildIDKey)
+	if found {
+		tags[buildIDKey] = buildID
+	}
+	jobName, found := os.LookupEnv(jobNameKey)
+	if found {
+		tags[jobNameKey] = jobName
+	}
+
 	return &ESReporter{
 		access: indexer,
 		tags:   tags,

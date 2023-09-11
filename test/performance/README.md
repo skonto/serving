@@ -87,6 +87,8 @@ helm install dashboards opensearch/opensearch-dashboards
 
 export ES_URL=https://localhost:9200
 oc port-forward svc/opensearch-cluster-master  9200:9200
+export ES_USERNAME=admin
+export ES_PASSWORD=admin
 
 # Creates an index template
 ./test/performance/visualization/setup-es.sh
@@ -98,22 +100,23 @@ curl -u elastic:Y*A_Ce=+0wbsV8C-b+u* -k -X POST "https://localhost:9200/knative-
   "@timestamp": "2023-09-12T11:23:23+03:00",
   "_measurement": "Knative Serving dataplane probe",
   "activator-pod-count": "2",
-  "tags": [{"PROW_TAG2": "custom", "t21":"t2"}]
+  "tags": [{"JOB_NAME": "custom", "t21":"t2"}]
 }
 '
 
 SYSTEM_NAMESPACE=knative-serving
-PROW_TAG="local"
+JOB_NAME="local"
+BUILD_ID="local"
 USE_OPEN_SEARCH=true
 export ES_URL=https://admin:admin@opensearch-cluster-master.default.svc.cluster.local:9200
-export ES_USERNAME=admin
-export ES_PASSWORD=admin
+
 
 kubectl create secret generic performance-test-config -n "default" \
   --from-literal=esurl="${ES_URL}" \
   --from-literal=esusername="${ES_USERNAME}" \
   --from-literal=espassword="${ES_PASSWORD}" \
-  --from-literal=prowtag="${PROW_TAG}"
+  --from-literal=prowtag="${JOB_NAME}" \
+  --from-literal=buildid="${BUILD_ID}"
 
 ko apply -f ./test/performance/benchmarks/dataplane-probe/dataplane-probe-setup.yaml
 sed "s|@SYSTEM_NAMESPACE@|$SYSTEM_NAMESPACE|g" ./test/performance/benchmarks/dataplane-probe/dataplane-probe-deployment.yaml | sed "s|@KO_DOCKER_REPO@|$KO_DOCKER_REPO|g" | sed "s|@USE_OPEN_SEARCH@|\"$USE_OPEN_SEARCH\"|g" | sed "s|@USE_ES@|'false'|g" | ko apply --sbom=none -Bf -
@@ -145,7 +148,8 @@ The tests expect to be configured with certain environment variables:
 * SYSTEM_NAMESPACE = Where knative-serving is installed, typically `knative-serving`
 * INFLUX_URL = http://local-influx-influxdb2.influx:80
 * INFLUX_TOKEN = as outputted from the command above
-* PROW_TAG=local
+* BUILD_ID=local
+* JOB_NAME=local
 
 ### Running them on cluster
 
