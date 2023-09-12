@@ -62,11 +62,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Minute)
 	defer cancel()
 
-	influxReporter, err := performance.NewInfluxReporter(map[string]string{"flavor": *flavor})
+	reporter, err := performance.NewDataPointReporterFactory(map[string]string{"flavor": *flavor}, benchmarkName)
 	if err != nil {
-		log.Fatalf("failed to create influx reporter: %v", err.Error())
+		log.Fatalf("failed to create data point reporter: %v", err.Error())
 	}
-	defer influxReporter.FlushAndShutdown()
+	defer reporter.FlushAndShutdown()
 
 	log.Print("Starting the load test.")
 	// Ramp up load from 1k to 3k in 2 minute steps.
@@ -98,22 +98,22 @@ func main() {
 		log.Fatalf("Error creating the pacer: %v", err)
 	}
 	resultsChan := vegeta.NewAttacker().Attack(targeter, pacer, 3*duration, "load-test")
-	metricResults := processResults(ctx, resultsChan, influxReporter, selector)
+	metricResults := processResults(ctx, resultsChan, &reporter, selector)
 
 	// Report the results
-	influxReporter.AddDataPointsForMetrics(metricResults, benchmarkName)
+	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
 	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
 	if err := checkSLA(metricResults); err != nil {
 		// make sure to still write the stats
-		influxReporter.FlushAndShutdown()
+		reporter.FlushAndShutdown()
 		log.Fatalf(err.Error())
 	}
 
 	log.Println("Load test finished")
 }
 
-func processResults(ctx context.Context, results <-chan *vegeta.Result, reporter *performance.InfluxReporter, selector labels.Selector) *vegeta.Metrics {
+func processResults(ctx context.Context, results <-chan *vegeta.Result, reporter *performance.DataPointReporter, selector labels.Selector) *vegeta.Metrics {
 	ctx, cancel := context.WithCancel(ctx)
 	deploymentStatus := performance.FetchDeploymentsStatus(ctx, namespace, selector, time.Second)
 	sksMode := performance.FetchSKSStatus(ctx, namespace, selector, time.Second)
@@ -141,7 +141,7 @@ func processResults(ctx context.Context, results <-chan *vegeta.Result, reporter
 
 		case ds := <-deploymentStatus:
 			// Add a sample point for the deployment status
-			reporter.AddDataPoint(benchmarkName,
+			(*reporter).AddDataPoint(benchmarkName,
 				map[string]interface{}{"ready-replicas": float64(ds.ReadyReplicas), "desired-replicas": float64(ds.DesiredReplicas)})
 
 		case sksm := <-sksMode:
@@ -150,7 +150,7 @@ func processResults(ctx context.Context, results <-chan *vegeta.Result, reporter
 			if sksm.Mode == netv1alpha1.SKSOperationModeProxy {
 				mode = 1.0
 			}
-			reporter.AddDataPoint(benchmarkName,
+			(*reporter).AddDataPoint(benchmarkName,
 				map[string]interface{}{"sks": mode, "num-activators": float64(sksm.NumActivators)})
 		}
 	}

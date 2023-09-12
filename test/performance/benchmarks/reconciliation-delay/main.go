@@ -155,11 +155,11 @@ func main() {
 
 	tick := time.NewTicker(*frequency)
 	metricResults := func() *vegeta.Metrics {
-		influxReporter, err := performance.NewInfluxReporter(map[string]string{})
+		reporter, err := performance.NewDataPointReporterFactory(map[string]string{}, benchmarkName)
 		if err != nil {
-			fatalf(fmt.Sprintf("failed to create influx reporter: %v", err.Error()))
+			fatalf(fmt.Sprintf("failed to create data point reporter: %v", err.Error()))
 		}
-		defer influxReporter.FlushAndShutdown()
+		defer reporter.FlushAndShutdown()
 
 		// We use vegeta.Metrics here as a metrics collector because it already contains logic to calculate percentiles
 		mr := &vegeta.Metrics{}
@@ -184,7 +184,7 @@ func main() {
 					break
 				}
 				svc := event.Object.(*v1.Service)
-				handleEvent(influxReporter, mr, svc, svc.Status.Status, serviceSeen, "Service")
+				handleEvent(&reporter, mr, svc, svc.Status.Status, serviceSeen, "Service")
 
 			case event := <-configurationWI.ResultChan():
 				if event.Type != watch.Modified {
@@ -192,7 +192,7 @@ func main() {
 					break
 				}
 				cfg := event.Object.(*v1.Configuration)
-				handleEvent(influxReporter, mr, cfg, cfg.Status.Status, configurationSeen, "Configuration")
+				handleEvent(&reporter, mr, cfg, cfg.Status.Status, configurationSeen, "Configuration")
 
 			case event := <-routeWI.ResultChan():
 				if event.Type != watch.Modified {
@@ -200,7 +200,7 @@ func main() {
 					break
 				}
 				rt := event.Object.(*v1.Route)
-				handleEvent(influxReporter, mr, rt, rt.Status.Status, routeSeen, "Route")
+				handleEvent(&reporter, mr, rt, rt.Status.Status, routeSeen, "Route")
 
 			case event := <-revisionWI.ResultChan():
 				if event.Type != watch.Modified {
@@ -208,7 +208,7 @@ func main() {
 					break
 				}
 				rev := event.Object.(*v1.Revision)
-				handleEvent(influxReporter, mr, rev, rev.Status.Status, revisionSeen, "Revision")
+				handleEvent(&reporter, mr, rev, rev.Status.Status, revisionSeen, "Revision")
 
 			case event := <-ingressWI.ResultChan():
 				if event.Type != watch.Modified {
@@ -216,7 +216,7 @@ func main() {
 					break
 				}
 				ing := event.Object.(*netv1alpha1.Ingress)
-				handleEvent(influxReporter, mr, ing, ing.Status.Status, ingressSeen, "Ingress")
+				handleEvent(&reporter, mr, ing, ing.Status.Status, ingressSeen, "Ingress")
 
 			case event := <-sksWI.ResultChan():
 				if event.Type != watch.Modified {
@@ -224,7 +224,7 @@ func main() {
 					break
 				}
 				ing := event.Object.(*netv1alpha1.ServerlessService)
-				handleEvent(influxReporter, mr, ing, ing.Status.Status, sksSeen, "ServerlessService")
+				handleEvent(&reporter, mr, ing, ing.Status.Status, sksSeen, "ServerlessService")
 
 			case event := <-paWI.ResultChan():
 				if event.Type != watch.Modified {
@@ -232,7 +232,7 @@ func main() {
 					break
 				}
 				pa := event.Object.(*autoscalingv1alpha1.PodAutoscaler)
-				handleEvent(influxReporter, mr, pa, pa.Status.Status, paSeen, "PodAutoscaler")
+				handleEvent(&reporter, mr, pa, pa.Status.Status, paSeen, "PodAutoscaler")
 			}
 		}
 	}()
@@ -271,7 +271,7 @@ func getService() *v1.Service {
 	return v1test.Service(rn, sos...)
 }
 
-func handleEvent(influxReporter *performance.InfluxReporter, metricResults *vegeta.Metrics, svc kmeta.Accessor,
+func handleEvent(reporter *performance.DataPointReporter, metricResults *vegeta.Metrics, svc kmeta.Accessor,
 	status duckv1.Status, seen sets.String, metric string) {
 	if seen.Has(svc.GetName()) {
 		return
@@ -288,7 +288,7 @@ func handleEvent(influxReporter *performance.InfluxReporter, metricResults *vege
 	elapsed := ready.Sub(created)
 
 	if cc.Status == corev1.ConditionTrue {
-		influxReporter.AddDataPoint(benchmarkName, map[string]interface{}{metric: elapsed.Seconds()})
+		(*reporter).AddDataPoint(benchmarkName, map[string]interface{}{metric: elapsed.Seconds()})
 		result := vegeta.Result{
 			Latency: elapsed,
 		}

@@ -113,11 +113,11 @@ func main() {
 	})
 	log.Print("Running rollout probe test with selector: ", selector)
 
-	influxReporter, err := performance.NewInfluxReporter(map[string]string{"target": *target})
+	reporter, err := performance.NewDataPointReporterFactory(map[string]string{"target": *target}, benchmarkName)
 	if err != nil {
-		log.Fatalf("failed to create influx reporter: %v", err.Error())
+		log.Fatalf("failed to create data point reporter: %v", err.Error())
 	}
-	defer influxReporter.FlushAndShutdown()
+	defer reporter.FlushAndShutdown()
 
 	// Setup background metric processes
 	deploymentStatus := performance.FetchDeploymentsStatus(ctx, namespace, selector, time.Second)
@@ -174,11 +174,11 @@ LOOP:
 			// If it is the first one -- report it.
 			if strings.Contains(ds.DeploymentName, firstRev) {
 				// Add a sample point for the deployment status.
-				influxReporter.AddDataPoint(benchmarkName,
+				reporter.AddDataPoint(benchmarkName,
 					map[string]interface{}{"desired-pods": float64(ds.DesiredReplicas), "available-pods": float64(ds.ReadyReplicas)})
 			} else if secondRev != "" && strings.Contains(ds.DeploymentName, secondRev) {
 				// Otherwise report the pods for the new deployment.
-				influxReporter.AddDataPoint(benchmarkName,
+				reporter.AddDataPoint(benchmarkName,
 					map[string]interface{}{"desired-pods-new": float64(ds.DesiredReplicas), "available-pods-new": float64(ds.ReadyReplicas)})
 				// Ignore all other revisions' deployments if there are, since
 				// they are from previous test run iterations, and we don't care about
@@ -207,12 +207,12 @@ LOOP:
 	metricResults.Close()
 
 	// Report the results
-	influxReporter.AddDataPointsForMetrics(metricResults, benchmarkName)
+	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
 	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
 	if err := checkSLA(metricResults); err != nil {
 		// make sure to still write the stats
-		influxReporter.FlushAndShutdown()
+		reporter.FlushAndShutdown()
 		log.Fatalf(err.Error())
 	}
 
