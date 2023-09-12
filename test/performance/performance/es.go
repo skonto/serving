@@ -1,12 +1,12 @@
 package performance
 
 import (
+	indexers2 "knative.dev/serving/test/performance/performance/indexers"
 	"log"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/cloud-bulldozer/go-commons/indexers"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
@@ -18,7 +18,7 @@ const (
 
 // ESReporter wraps an ES based indexer
 type ESReporter struct {
-	access *indexers.Indexer
+	access *indexers2.Indexer
 	tags   map[string]string
 }
 
@@ -35,13 +35,13 @@ func splitServers(envURLS string) []string {
 	return addrs
 }
 
-func NewESReporter(tags map[string]string, indexerType indexers.IndexerType, index string) (*ESReporter, error) {
+func NewESReporter(tags map[string]string, indexerType indexers2.IndexerType, index string) (*ESReporter, error) {
 	var servers []string
 
 	if v, b := os.LookupEnv(ESServerURLSEnv); b {
 		servers = splitServers(v)
 	}
-	indexer, err := indexers.NewIndexer(indexers.IndexerConfig{
+	indexer, err := indexers2.NewIndexer(indexers2.IndexerConfig{
 		Type:               indexerType,
 		Index:              sanitizeIndex(index),
 		Servers:            servers,
@@ -86,7 +86,7 @@ func (esr *ESReporter) AddDataPoint(measurement string, fields map[string]interf
 	// Use the same format as in influxdb
 	p["@timestamp"] = time.Now().Format(time.RFC3339Nano)
 	docs := []interface{}{p}
-	msg, err := (*esr.access).Index(docs, indexers.IndexingOpts{})
+	msg, err := (*esr.access).Index(docs, indexers2.IndexingOpts{})
 	if err != nil {
 		log.Printf("Indexing failed: %s", err.Error())
 	}

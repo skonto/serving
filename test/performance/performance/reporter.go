@@ -1,10 +1,10 @@
 package performance
 
 import (
+	"knative.dev/serving/test/performance/performance/indexers"
 	"os"
 	"strconv"
 
-	"github.com/cloud-bulldozer/go-commons/indexers"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
