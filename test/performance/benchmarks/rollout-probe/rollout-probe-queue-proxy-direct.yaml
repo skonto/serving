@@ -49,13 +49,13 @@ spec:
         args: ["-target=queue-proxy-with-cc", "--duration=3m"]
         env:
           - name: KO_DOCKER_REPO
-            value: @KO_DOCKER_REPO@
+            value: $KO_DOCKER_REPO
           - name: SYSTEM_NAMESPACE
-            value: @SYSTEM_NAMESPACE@
+            value: $SYSTEM_NAMESPACE
           - name: USE_OPEN_SEARCH
-            value: @USE_OPEN_SEARCH@
+            value: $USE_OPEN_SEARCH
           - name: USE_ES
-            value: @USE_ES@
+            value: $USE_ES
           - name: INFLUX_URL
             valueFrom:
               secretKeyRef:
