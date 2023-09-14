@@ -21,7 +21,7 @@ if [[ -z "${ES_PASSWORD}" ]]; then
   exit 1
 fi
 
-curl -u $ES_USERNAME:$ES_PASSWORD -k -X POST "https://${ES_URL}:9200/_index_template/knative-serving" -H 'Content-Type: application/json' -d'
+curl -u $ES_USERNAME:$ES_PASSWORD -k -X POST "${ES_URL}/_index_template/knative-serving" -H 'Content-Type: application/json' -d'
 {
   "index_patterns": ["knative-serving*"],
   "template": {

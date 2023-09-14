@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"runtime"
 	"strings"
@@ -50,6 +51,7 @@ func init() {
 // Returns new indexer for OpenSearch
 func (OpenSearchIndexer *OpenSearch) new(indexerConfig IndexerConfig) error {
 	var err error
+	log.Printf("COOO:%v\n", indexerConfig)
 	if indexerConfig.Index == "" {
 		return fmt.Errorf("index name not specified")
 	}

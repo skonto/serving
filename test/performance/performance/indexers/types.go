@@ -14,6 +14,8 @@
 
 package indexers
 
+import "fmt"
+
 // Types of indexers
 const (
 	// Elastic indexer that sends metrics to the configured ES instance
@@ -23,6 +25,8 @@ const (
 	// Local indexer that writes metrics to local directory
 	LocalIndexer IndexerType = "local"
 )
+
+var indexerMap = make(map[IndexerType]Indexer)
 
 // Indexer interface
 type Indexer interface {
@@ -54,4 +58,20 @@ type IndexerConfig struct {
 	CreateTarball bool `yaml:"createTarball"`
 	// TarBall name
 	TarballName string `yaml:"tarballName"`
+}
+
+// NewIndexer creates a new Indexer with the specified IndexerConfig
+func NewIndexer(indexerConfig IndexerConfig) (*Indexer, error) {
+	var indexer Indexer
+	var exists bool
+	cfg := indexerConfig
+	if indexer, exists = indexerMap[cfg.Type]; exists {
+		err := indexer.new(indexerConfig)
+		if err != nil {
+			return &indexer, err
+		}
+	} else {
+		return &indexer, fmt.Errorf("Indexer not found: %s", cfg.Type)
+	}
+	return &indexer, nil
 }

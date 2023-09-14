@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ESServerURLSEnv  = "ES_SERVER_URLS"
+	ESServerURLSEnv  = "ES_URL"
 	UseOpenSearcnEnv = "USE_OPEN_SEARCH"
 	UseESEnv         = "USE_ES"
 )
@@ -23,7 +23,8 @@ type ESReporter struct {
 }
 
 func sanitizeIndex(index string) string {
-	return strings.Replace(index, " ", "_", -1)
+	indexRaw := strings.ToLower(index)
+	return strings.Replace(indexRaw, " ", "-", -1)
 }
 
 func splitServers(envURLS string) []string {

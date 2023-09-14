@@ -76,6 +76,49 @@ export INFLUX_TOKEN=$(kubectl get secret local-influx-influxdb2-auth -o "jsonpat
 ./visualization/setup-influx-db.sh
 ```
 
+### Elastic Search / Opensearch
+
+```bash
+helm repo add opensearch https://opensearch-project.github.io/helm-charts/
+helm repo update
+helm search repo opensearch
+helm install my-deployment opensearch/opensearch
+helm install dashboards opensearch/opensearch-dashboards
+
+export ES_URL=https://localhost:9200
+oc port-forward svc/opensearch-cluster-master  9200:9200
+
+# Creates an index template
+./test/performance/visualization/setup-es.sh
+
+# Sample log entry to create:
+
+curl -u elastic:Y*A_Ce=+0wbsV8C-b+u* -k -X POST "https://localhost:9200/knative-serving-data-plane/_doc" -H 'Content-Type: application/json' -d'
+{
+  "@timestamp": "2023-09-12T11:23:23+03:00",
+  "_measurement": "Knative Serving dataplane probe",
+  "activator-pod-count": "2",
+  "tags": [{"PROW_TAG2": "custom", "t21":"t2"}]
+}
+'
+
+SYSTEM_NAMESPACE=knative-serving
+PROW_TAG="local"
+USE_OPEN_SEARCH=true
+export ES_URL=https://admin:admin@opensearch-cluster-master.default.svc.cluster.local:9200
+export ES_USERNAME=admin
+export ES_PASSWORD=admin
+
+kubectl create secret generic performance-test-config -n "default" \
+  --from-literal=esurl="${ES_URL}" \
+  --from-literal=esusername="${ES_USERNAME}" \
+  --from-literal=espassword="${ES_PASSWORD}" \
+  --from-literal=prowtag="${PROW_TAG}"
+
+ko apply -f ./test/performance/benchmarks/dataplane-probe/dataplane-probe-setup.yaml
+sed "s|@SYSTEM_NAMESPACE@|$SYSTEM_NAMESPACE|g" ./test/performance/benchmarks/dataplane-probe/dataplane-probe-deployment.yaml | sed "s|@KO_DOCKER_REPO@|$KO_DOCKER_REPO|g" | sed "s|@USE_OPEN_SEARCH@|\"$USE_OPEN_SEARCH\"|g" | sed "s|@USE_ES@|'false'|g" | ko apply --sbom=none -Bf -
+```
+
 ### Local grafana dashboards
 
 Use an existing grafana instance or create one on your cluster, [see docs](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/).
@@ -103,7 +146,6 @@ The tests expect to be configured with certain environment variables:
 * INFLUX_URL = http://local-influx-influxdb2.influx:80
 * INFLUX_TOKEN = as outputted from the command above
 * PROW_TAG=local
-
 
 ### Running them on cluster
 

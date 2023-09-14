@@ -52,16 +52,40 @@ spec:
             value: @KO_DOCKER_REPO@
           - name: SYSTEM_NAMESPACE
             value: @SYSTEM_NAMESPACE@
+          - name: USE_OPEN_SEARCH
+            value: @USE_OPEN_SEARCH@
+          - name: USE_ES
+            value: @USE_ES@
           - name: INFLUX_URL
             valueFrom:
               secretKeyRef:
                 name: performance-test-config
                 key: influxurl
+                optional: true
           - name: INFLUX_TOKEN
             valueFrom:
               secretKeyRef:
                 name: performance-test-config
                 key: influxtoken
+                optional: true
+          - name: ES_URL
+            valueFrom:
+              secretKeyRef:
+                name: performance-test-config
+                key: esurl
+                optional: true
+          - name: ES_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: performance-test-config
+                key: esusername
+                optional: true
+          - name: ES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: performance-test-config
+                key: espassword
+                optional: true
           - name: PROW_TAG
             valueFrom:
               secretKeyRef:
