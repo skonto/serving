@@ -140,7 +140,7 @@ To use our InfluxDB as a datasource for Grafana
 
 You can run all the benchmarks directly by calling the `main()` method in `main.go` in the respective [benchmarks](./benchmarks) folders.
 
-#### Environment
+#### Environment and Secret
 
 The tests expect to be configured with certain environment variables:
 
@@ -150,6 +150,16 @@ The tests expect to be configured with certain environment variables:
 * INFLUX_TOKEN = as outputted from the command above
 * BUILD_ID=local
 * JOB_NAME=local
+
+and a `Secret` in the `default` namespace with the following contents:
+
+```bash
+kubectl create secret generic performance-test-config -n default \
+  --from-literal=influxurl="${INFLUX_URL}" \
+  --from-literal=influxtoken="${INFLUX_TOKEN}" \
+  --from-literal=jobname="${JOB_NAME}" \
+  --from-literal=buildid="${BUILD_ID}"
+```
 
 ### Running them on cluster
 
