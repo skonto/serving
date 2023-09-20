@@ -86,7 +86,7 @@ helm install my-deployment opensearch/opensearch
 helm install dashboards opensearch/opensearch-dashboards
 
 export ES_URL=https://localhost:9200
-oc port-forward svc/opensearch-cluster-master  9200:9200
+oc port-forward svc/opensearch-cluster-master 9200:9200
 export ES_USERNAME=admin
 export ES_PASSWORD=admin
 
@@ -115,7 +115,7 @@ kubectl create secret generic performance-test-config -n "default" \
   --from-literal=esurl="${ES_URL}" \
   --from-literal=esusername="${ES_USERNAME}" \
   --from-literal=espassword="${ES_PASSWORD}" \
-  --from-literal=prowtag="${JOB_NAME}" \
+  --from-literal=jobname="${JOB_NAME}" \
   --from-literal=buildid="${BUILD_ID}"
 
 ko apply -f ./test/performance/benchmarks/dataplane-probe/dataplane-probe-setup.yaml

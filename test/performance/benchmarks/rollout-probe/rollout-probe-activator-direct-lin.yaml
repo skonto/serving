@@ -46,7 +46,9 @@ spec:
       containers:
       - name: rollout-probe
         image: ko://knative.dev/serving/test/performance/benchmarks/rollout-probe
-        args: ["-target=activator-with-cc-lin", "--duration=3m"]
+        args:
+        - "-target=activator-with-cc-lin"
+        - "--duration=3m"
         env:
           - name: KO_DOCKER_REPO
             value: $KO_DOCKER_REPO

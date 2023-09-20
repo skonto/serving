@@ -21,8 +21,8 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "3"
-        autoscaling.knative.dev/maxScale: "3"
+        autoscaling.knative.dev/minScale: "5"
+        autoscaling.knative.dev/maxScale: "5"
         # Always hook the activator in.
         autoscaling.knative.dev/targetBurstCapacity: "-1"
     spec:
@@ -39,8 +39,8 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "3"
-        autoscaling.knative.dev/maxScale: "3"
+        autoscaling.knative.dev/minScale: "5"
+        autoscaling.knative.dev/maxScale: "5"
         # Only hook the activator in when scaled to zero.
         autoscaling.knative.dev/targetBurstCapacity: "0"
     spec:
@@ -66,7 +66,7 @@ metadata:
   name: deployment
   namespace: default
 spec:
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
       app: app1

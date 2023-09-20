@@ -46,7 +46,8 @@ spec:
         - name: scale-from-zero
           image: ko://knative.dev/serving/test/performance/benchmarks/scale-from-zero
           args:
-            - "-parallel=1"
+          - "-parallel=1"
+          - $IMAGE_TEMPLATE_REPLACE
           env:
             - name: KO_DOCKER_REPO
               value: $KO_DOCKER_REPO

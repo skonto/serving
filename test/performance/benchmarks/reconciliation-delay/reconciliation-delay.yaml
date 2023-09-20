@@ -49,6 +49,7 @@ spec:
         args:
         - "-duration=15m"
         - "-frequency=5s"
+        - $IMAGE_TEMPLATE_REPLACE
         resources:
           requests:
             cpu: 100m
