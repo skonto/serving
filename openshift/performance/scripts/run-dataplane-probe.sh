@@ -5,8 +5,6 @@ set -o nounset
 set -o pipefail
 declare ns
 
-
-
 # Customization
 parallelism=$1
 export parallelism=$parallelism

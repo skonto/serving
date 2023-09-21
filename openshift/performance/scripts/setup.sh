@@ -32,7 +32,7 @@ function run_job() {
 END
 )
 
-  TEST_IMAGE_TEMPLATE=$(echo $TEST_IMAGE_TEMPLATE | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')
+  TEST_IMAGE_TEMPLATE=$(echo "$TEST_IMAGE_TEMPLATE" | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')
 
   # cleanup from old runs
   oc delete job "$name" -n "$ns" --ignore-not-found=true

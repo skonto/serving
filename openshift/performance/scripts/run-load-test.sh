@@ -5,6 +5,7 @@ set -o nounset
 set -o pipefail
 declare ns
 
+# shellcheck disable=SC1091
 source "$(dirname "$0")/setup.sh"
 
 # Customization

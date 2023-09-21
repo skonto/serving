@@ -3,8 +3,11 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+
+# shellcheck disable=SC2034
 declare ns
 
+# shellcheck disable=SC1091
 source "$(dirname "$0")/setup.sh"
 
 # Running the tests
