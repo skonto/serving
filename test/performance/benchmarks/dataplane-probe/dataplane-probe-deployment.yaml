@@ -46,7 +46,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: dataplane-probe
-          image: ko://knative.dev/serving/test/performance/benchmarks/dataplane-probe
+          image: docker.io/skonto/dataplane-probe-13daa01eab9bbd0b55b029ef0217990f@sha256:5c4b872b0178fee9629dbf46b32bf2a647373943fc7c9daaeaa47870c293e45b
           args: ["-target=deployment", "--duration=3m"]
           env:
             - name: SYSTEM_NAMESPACE

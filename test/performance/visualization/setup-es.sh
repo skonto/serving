@@ -7,6 +7,8 @@ set -o pipefail
 declare ES_URL
 declare ES_USERNAME
 declare ES_PASSWORD
+declare AUTH
+declare ES_DEVELOPMENT
 
 if [[ -z "${ES_URL}" ]]; then
   echo "env variable 'ES_URL' not specified!"
@@ -21,7 +23,13 @@ if [[ -z "${ES_PASSWORD}" ]]; then
   exit 1
 fi
 
-curl -u $ES_USERNAME:$ES_PASSWORD -k -X POST "${ES_URL}/_index_template/knative-serving" -H 'Content-Type: application/json' -d'
+if [[ -z "${ES_DEVELOPMENT+x}" ]]; then
+  AUTH="-u $ES_USERNAME:$ES_PASSWORD"
+else
+  AUTH=""
+fi
+
+curl -k -X POST ${ES_URL}/_index_template/knative-serving -H 'Content-Type: application/json' -d'
 {
   "index_patterns": ["knative-serving*"],
   "template": {
@@ -43,7 +51,7 @@ curl -u $ES_USERNAME:$ES_PASSWORD -k -X POST "${ES_URL}/_index_template/knative-
           "type": "nested"
         },
         "requests": {
-          "type": "unsigned_long"
+          "type": "long"
         },
         "rate": {
           "type": "double"

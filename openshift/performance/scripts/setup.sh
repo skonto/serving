@@ -10,11 +10,15 @@ set -o errexit
 set -o pipefail
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
 source "${SERVING}/test/e2e-common.sh"
 
 declare JOB_NAME
 declare BUILD_ID
 declare ARTIFACTS
+# shellcheck disable=SC2034
+declare AUTH
+declare ES_DEVELOPMENT
 
 ns="default"
 
@@ -32,7 +36,8 @@ function run_job() {
 END
 )
 
-  TEST_IMAGE_TEMPLATE=$(echo "$TEST_IMAGE_TEMPLATE" | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')
+# shellcheck disable=SC2086
+  TEST_IMAGE_TEMPLATE=$(echo ${TEST_IMAGE_TEMPLATE} | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')
 
   # cleanup from old runs
   oc delete job "$name" -n "$ns" --ignore-not-found=true
@@ -60,12 +65,19 @@ if [[ -z "${ES_PASSWORD}" ]]; then
   ES_PASSWORD=$(cat "/secret/password")
 fi
 
-if [[ -z "${ES_USERNAME}" ]]; then
-  ES_USERNAME=$(cat "/secret/username")
-fi
+# If ES_DEVELOPMENT is specified we run against a non-secured development instance
+# with no authentication
+if [[ -z "${ES_DEVELOPMENT+x}" ]]; then
+  if [[ -z "${ES_USERNAME}" ]]; then
+    ES_USERNAME=$(cat "/secret/username")
+  fi
 
-if [[ -z "${ES_HOST_PORT}" ]]; then
-  ES_HOST_PORT="search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+  if [[ -z "${ES_HOST_PORT}" ]]; then
+    ES_HOST_PORT="search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
+  fi
+  export ES_URL="https://${ES_USERNAME}:${ES_PASSWORD}@${ES_HOST_PORT}"
+else
+  export ES_URL="https://${ES_HOST_PORT}"
 fi
 
 if [[ -z "${JOB_NAME}" ]]; then
@@ -82,7 +94,7 @@ echo "Running load test with BUILD_ID: ${BUILD_ID}, JOB_NAME: ${JOB_NAME}, repor
 header "Preparing cluster config"
 
 kubectl delete secret performance-test-config -n "$ns" --ignore-not-found=true
-ES_URL="https://${ES_USERNAME}:${ES_PASSWORD}@${ES_HOST_PORT}"
+
 kubectl create secret generic performance-test-config -n "$ns" \
   --from-literal=esurl="${ES_URL}" \
   --from-literal=jobname="${JOB_NAME}" \
