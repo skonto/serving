@@ -29,6 +29,7 @@ else
     AUTH="-u $ES_USERNAME:$ES_PASSWORD"
 fi
 
+# shellcheck disable=SC2086
 curl ${AUTH} -k -X POST ${ES_URL}/_index_template/knative-serving -H 'Content-Type: application/json' -d'
 {
   "index_patterns": ["knative-serving*"],
