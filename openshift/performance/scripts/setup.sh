@@ -67,7 +67,9 @@ fi
 
 # If ES_DEVELOPMENT is specified we run against a non-secured development instance
 # with no authentication
-if [[ -z "${ES_DEVELOPMENT+x}" ]]; then
+if [[ "${ES_DEVELOPMENT}" == "true" ]]; then
+  export ES_URL="https://${ES_HOST_PORT}"
+else
   if [[ -z "${ES_USERNAME}" ]]; then
     ES_USERNAME=$(cat "/secret/username")
   fi
@@ -76,8 +78,6 @@ if [[ -z "${ES_DEVELOPMENT+x}" ]]; then
     ES_HOST_PORT="search-ocp-qe-perf-scale-test-elk-hcm7wtsqpxy7xogbu72bor4uve.us-east-1.es.amazonaws.com"
   fi
   export ES_URL="https://${ES_USERNAME}:${ES_PASSWORD}@${ES_HOST_PORT}"
-else
-  export ES_URL="https://${ES_HOST_PORT}"
 fi
 
 if [[ -z "${JOB_NAME}" ]]; then

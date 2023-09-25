@@ -14,22 +14,22 @@ if [[ -z "${ES_URL}" ]]; then
   echo "env variable 'ES_URL' not specified!"
   exit 1
 fi
-if [[ -z "${ES_USERNAME}" ]]; then
-  echo "env variable 'ES_USERNAME' not specified!"
-  exit 1
-fi
-if [[ -z "${ES_PASSWORD}" ]]; then
-  echo "env variable 'ES_PASSWORD' not specified!"
-  exit 1
-fi
 
-if [[ -z "${ES_DEVELOPMENT+x}" ]]; then
-  AUTH="-u $ES_USERNAME:$ES_PASSWORD"
+if [[ "${ES_DEVELOPMENT}" == "true" ]]; then
+    AUTH=""
 else
-  AUTH=""
+    if [[ -z "${ES_USERNAME}" ]]; then
+      echo "env variable 'ES_USERNAME' not specified!"
+      exit 1
+    fi
+    if [[ -z "${ES_PASSWORD}" ]]; then
+      echo "env variable 'ES_PASSWORD' not specified!"
+      exit 1
+    fi
+    AUTH="-u $ES_USERNAME:$ES_PASSWORD"
 fi
 
-curl -k -X POST ${ES_URL}/_index_template/knative-serving -H 'Content-Type: application/json' -d'
+curl ${AUTH} -k -X POST ${ES_URL}/_index_template/knative-serving -H 'Content-Type: application/json' -d'
 {
   "index_patterns": ["knative-serving*"],
   "template": {
@@ -48,7 +48,26 @@ curl -k -X POST ${ES_URL}/_index_template/knative-serving -H 'Content-Type: appl
           "type": "keyword"
         },
         "tags": {
-          "type": "nested"
+          "properties": {
+             "flavor": {
+                "type": "keyword"
+             },
+             "parallel": {
+                "type": "long"
+             },
+             "target": {
+                "type": "keyword"
+             },
+             "number-of-services": {
+                "type": "long"
+             },
+             "BUILD_ID": {
+                "type": "keyword"
+             },
+             "JOB_NAME": {
+                "type": "keyword"
+             }
+          }
         },
         "requests": {
           "type": "long"
