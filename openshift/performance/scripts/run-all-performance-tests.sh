@@ -23,7 +23,7 @@ oc patch knativeserving knative-serving \
     -n "${SYSTEM_NAMESPACE}" \
     --type merge --patch '{"spec":{"workloads":[{"name":"activator","replicas":2,"resources":[{"container":"activator","requests":{"cpu":"1000m","memory":"1000Mi"},"limits":{"cpu":"2000m","memory":"4000Mi"}}]}]}}'
 
-#sleep 100
+sleep 100
 
 ###############################################################################################
 header "Real traffic test"
@@ -31,7 +31,9 @@ toggle_feature kubernetes.podspec-init-containers Enabled
 sed -i "s,image: .*,image: ${KNATIVE_SERVING_PERF_TEST_REAL_TRAFFIC}," "${SERVING}/test/performance/benchmarks/real-traffic-test/real-traffic-test.yaml"
 run_job real-traffic-test "${SERVING}/test/performance/benchmarks/real-traffic-test/real-traffic-test.yaml" "${KNATIVE_SERVING_PERF_TEST_REAL_TRAFFIC%/*}"
 sleep 100 # wait a bit for the cleanup to be done
+kubectl delete ksvc -n "$ns" --all --wait --now
 toggle_feature kubernetes.podspec-init-containers Disabled
+
 ###############################################################################################
 header "Dataplane probe: Setup"
 

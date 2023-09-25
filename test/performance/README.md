@@ -91,7 +91,7 @@ export ES_USERNAME=admin
 export ES_PASSWORD=admin
 
 # Creates an index template
-./test/performance/visualization/setup-es.sh
+./test/performance/visualization/setup-es-index.sh
 
 # Sample log entry to create:
 

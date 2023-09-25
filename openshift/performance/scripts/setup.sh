@@ -61,10 +61,6 @@ END
   oc wait --for=delete "job/$name" --timeout=60s -n "$ns"
 }
 
-if [[ -z "${ES_PASSWORD}" ]]; then
-  ES_PASSWORD=$(cat "/secret/password")
-fi
-
 # If ES_DEVELOPMENT is specified we run against a non-secured development instance
 # with no authentication
 if [[ "${ES_DEVELOPMENT}" == "true" ]]; then
@@ -72,6 +68,10 @@ if [[ "${ES_DEVELOPMENT}" == "true" ]]; then
 else
   if [[ -z "${ES_USERNAME}" ]]; then
     ES_USERNAME=$(cat "/secret/username")
+  fi
+
+  if [[ -z "${ES_PASSWORD}" ]]; then
+    ES_PASSWORD=$(cat "/secret/password")
   fi
 
   if [[ -z "${ES_HOST_PORT}" ]]; then
