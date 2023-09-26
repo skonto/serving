@@ -130,3 +130,18 @@ index af1498dee..96e4839a9 100644
  }
 
  func TestUnsafePermitted(t *testing.T) {
+diff --git a/pkg/reconciler/revision/resources/queue.go b/pkg/reconciler/revision/resources/queue.go
+index 1fb964a53..b8cd617ef 100644
+--- a/pkg/reconciler/revision/resources/queue.go
++++ b/pkg/reconciler/revision/resources/queue.go
+@@ -86,9 +86,6 @@ var (
+ 		Capabilities: &corev1.Capabilities{
+ 			Drop: []corev1.Capability{"ALL"},
+ 		},
+-		SeccompProfile: &corev1.SeccompProfile{
+-			Type: corev1.SeccompProfileTypeRuntimeDefault,
+-		},
+ 	}
+ )
+
+
