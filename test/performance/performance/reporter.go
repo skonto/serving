@@ -1,12 +1,11 @@
 package performance
 
 import (
-	"knative.dev/serving/test/performance/performance/indexers"
-	"log"
 	"os"
 	"strconv"
 
 	vegeta "github.com/tsenart/vegeta/v12/lib"
+	"knative.dev/serving/test/performance/performance/indexers"
 )
 
 type DataPointReporter interface {
@@ -36,10 +35,8 @@ func NewDataPointReporterFactory(tags map[string]string, index string) (DataPoin
 		if b, err = strconv.ParseBool(v); err == nil {
 			if b {
 				useDefaultReporter = false
-				log.Println("here 3")
 				reporter, err = NewESReporter(tags, indexers.OpenSearchIndexer, index)
 				if err != nil {
-					log.Println("here 3.1")
 					return nil, err
 				}
 			}
