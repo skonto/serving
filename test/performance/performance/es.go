@@ -1,13 +1,13 @@
 package performance
 
 import (
-	indexers2 "knative.dev/serving/test/performance/performance/indexers"
 	"log"
 	"os"
 	"strings"
 	"time"
 
 	vegeta "github.com/tsenart/vegeta/v12/lib"
+	indexers2 "knative.dev/serving/test/performance/performance/indexers"
 )
 
 const (
