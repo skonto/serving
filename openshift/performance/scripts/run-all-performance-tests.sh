@@ -11,13 +11,13 @@ set -o pipefail
 
 if [[ "${ISOLATE_SERVERLESS}" == "true" ]]; then
   nodes=$(kubectl get nodes -l=node-role.kubernetes.io/worker --no-headers -o custom-columns=":metadata.name")
-  nodes=($nodes)
+  mapfile -t nodes < <(echo "$nodes")
 
   # disable scheduling on existing worker nodes
   for v in "${nodes[@]}"
   do
     echo "cordoning node: $v"
-    oc adm cordon $v
+    oc adm cordon "$v"
   done
 
   header "Scaling cluster"
@@ -25,8 +25,8 @@ if [[ "${ISOLATE_SERVERLESS}" == "true" ]]; then
   oc wait --for=jsonpath="{.status.availableReplicas}=4" machineset --all -n openshift-machine-api --timeout=-1s
 
   final_nodes=$(kubectl get nodes -l=node-role.kubernetes.io/worker --no-headers -o custom-columns=":metadata.name")
-  final_nodes=($final_nodes)
-  new_nodes=(`echo ${final_nodes[@]} ${nodes[@]} | tr ' ' '\n' | sort | uniq  -u`)
+  mapfile -t final_nodes < <(echo "$final_nodes")
+  mapfile -t new_nodes < <(echo "${final_nodes[@]}" "${nodes[@]}" | tr ' ' '\n' | sort | uniq  -u)
 
   # add taints to specific nodes, activator, gateway should run on a separate node each
   # use another two nodes for all the Serverless control plane pods, the rest will be used by ksvcs
