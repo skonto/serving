@@ -10,40 +10,40 @@ set -o nounset
 set -o pipefail
 
 if [[ "${ISOLATE_SERVERLESS}" == "true" ]]; then
-#  nodes=$(kubectl get nodes -l=node-role.kubernetes.io/worker --no-headers -o custom-columns=":metadata.name")
-#  nodes=($nodes)
-#
-#  # disable scheduling on existing worker nodes
-#  for v in "${nodes[@]}"
-#  do
-#    echo "cordoning node: $v"
-#    oc adm cordon $v
-#  done
-#
-#  header "Scaling cluster"
-#  for name in $(oc get machineset -n openshift-machine-api -o name); do oc scale "$name" -n openshift-machine-api --replicas=4; done
-#  oc wait --for=jsonpath="{.status.availableReplicas}=4" machineset --all -n openshift-machine-api --timeout=-1s
-#
-#  final_nodes=$(kubectl get nodes -l=node-role.kubernetes.io/worker --no-headers -o custom-columns=":metadata.name")
-#  final_nodes=($final_nodes)
-#  new_nodes=(`echo ${final_nodes[@]} ${nodes[@]} | tr ' ' '\n' | sort | uniq  -u`)
-#
-#  # add taints to specific nodes, activator, gateway should run on a separate node each
-#  # use another two nodes for all the Serverless control plane pods, the rest will be used by ksvcs
-#  # isolate data path
-#  oc adm taint nodes "${new_nodes[0]}" knative-activator=true:NoSchedule
-#  oc label nodes "${new_nodes[0]}" knative-activator=true
-#  without_activator=("${new_nodes[@]:1}")
-#
-#  oc adm taint nodes "${without_activator[0]}" knative-ingress=true:NoSchedule
-#  oc label nodes "${without_activator[0]}" knative-ingress=true
-#  without_ingress=("${without_activator[@]:1}")
-#
-#  oc adm taint nodes "${without_ingress[0]}" serverless=true:NoSchedule
-#  oc adm taint nodes "${without_ingress[1]}" serverless=true:NoSchedule
-#
-#  oc label nodes "${without_ingress[0]}" serverless=true
-#  oc label nodes "${without_ingress[1]}" serverless=true
+  nodes=$(kubectl get nodes -l=node-role.kubernetes.io/worker --no-headers -o custom-columns=":metadata.name")
+  nodes=($nodes)
+
+  # disable scheduling on existing worker nodes
+  for v in "${nodes[@]}"
+  do
+    echo "cordoning node: $v"
+    oc adm cordon $v
+  done
+
+  header "Scaling cluster"
+  for name in $(oc get machineset -n openshift-machine-api -o name); do oc scale "$name" -n openshift-machine-api --replicas=4; done
+  oc wait --for=jsonpath="{.status.availableReplicas}=4" machineset --all -n openshift-machine-api --timeout=-1s
+
+  final_nodes=$(kubectl get nodes -l=node-role.kubernetes.io/worker --no-headers -o custom-columns=":metadata.name")
+  final_nodes=($final_nodes)
+  new_nodes=(`echo ${final_nodes[@]} ${nodes[@]} | tr ' ' '\n' | sort | uniq  -u`)
+
+  # add taints to specific nodes, activator, gateway should run on a separate node each
+  # use another two nodes for all the Serverless control plane pods, the rest will be used by ksvcs
+  # isolate data path
+  oc adm taint nodes "${new_nodes[0]}" knative-activator=true:NoSchedule
+  oc label nodes "${new_nodes[0]}" knative-activator=true
+  without_activator=("${new_nodes[@]:1}")
+
+  oc adm taint nodes "${without_activator[0]}" knative-ingress=true:NoSchedule
+  oc label nodes "${without_activator[0]}" knative-ingress=true
+  without_ingress=("${without_activator[@]:1}")
+
+  oc adm taint nodes "${without_ingress[0]}" serverless=true:NoSchedule
+  oc adm taint nodes "${without_ingress[1]}" serverless=true:NoSchedule
+
+  oc label nodes "${without_ingress[0]}" serverless=true
+  oc label nodes "${without_ingress[1]}" serverless=true
 
   oc patch knativeserving knative-serving \
     -n "${SYSTEM_NAMESPACE}" \
