@@ -63,7 +63,7 @@ END
 
 # If ES_DEVELOPMENT is specified we run against a non-secured development instance
 # with no authentication
-if [[ "${ES_DEVELOPMENT}" == "true" ]]; then
+if [[ "${ES_DEVELOPMENT:-false}" == "true" ]]; then
   export ES_URL="https://${ES_HOST_PORT}"
 else
   if [[ -z "${ES_USERNAME}" ]]; then

@@ -9,7 +9,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-if [[ "${ISOLATE_SERVERLESS}" == "true" ]]; then
+if [[ "${ISOLATE_SERVERLESS:-false}" == "true" ]]; then
   nodes=$(kubectl get nodes -l=node-role.kubernetes.io/worker --no-headers -o custom-columns=":metadata.name")
   mapfile -t nodes < <(echo "$nodes")
 
@@ -65,8 +65,6 @@ else
     -n "${SYSTEM_NAMESPACE}" \
     --type merge --patch '{"metadata": {"annotations": {"serverless.openshift.io/default-enable-http2": "true" }}}'
 fi
-
-sleep 100
 
 ###############################################################################################
 header "Real traffic test"
