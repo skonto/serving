@@ -112,7 +112,7 @@ func (ir *InfluxReporter) AddDataPointsForMetrics(m *vegeta.Metrics, benchmarkNa
 			"latency-max":  float64(m.Latencies.Max),
 			"latency-p95":  float64(m.Latencies.P95),
 			"success":      m.Success,
-			"errors":       len(m.Errors),
+			"errors":       float64(len(m.Errors)),
 			"bytes-in":     float64(m.BytesIn.Total),
 			"bytes-out":    float64(m.BytesOut.Total),
 		},

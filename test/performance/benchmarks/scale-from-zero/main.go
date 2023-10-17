@@ -129,11 +129,11 @@ func main() {
 		log.Fatal("Failed to setup clients: ", err)
 	}
 
-	influxReporter, err := performance.NewInfluxReporter(map[string]string{"parallel": strconv.Itoa(*parallelCount)})
+	reporter, err := performance.NewDataPointReporterFactory(map[string]string{"parallel": strconv.Itoa(*parallelCount)}, benchmarkName)
 	if err != nil {
-		log.Fatalf("Failed to create InfluxReporter: %v", err)
+		log.Fatalf("Failed to create data point reporter: %v", err)
 	}
-	defer influxReporter.FlushAndShutdown()
+	defer reporter.FlushAndShutdown()
 
 	// We use vegeta.Metrics here as a metrics collector because it already contains logic to calculate percentiles
 	vegetaReporter := performance.NewVegetaReporter()
@@ -157,18 +157,18 @@ func main() {
 		fatalf("Failed to wait for all services to scale to zero: %v", err)
 	}
 
-	parallelScaleFromZero(ctx, clients, services, influxReporter, vegetaReporter)
+	parallelScaleFromZero(ctx, clients, services, &reporter, vegetaReporter)
 
 	metricResults := vegetaReporter.StopAndCollectMetrics()
 
 	// Report the results
-	influxReporter.AddDataPointsForMetrics(metricResults, benchmarkName)
+	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
 	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
 	sla := slas[*parallelCount]
 	if err := checkSLA(metricResults, sla.p95min, sla.p95max, sla.latencyMax); err != nil {
 		// make sure to still write the stats
-		influxReporter.FlushAndShutdown()
+		reporter.FlushAndShutdown()
 		log.Fatalf(err.Error())
 	}
 
@@ -252,7 +252,7 @@ func waitForScaleToZero(ctx context.Context, objs []*v1test.ResourceObjects) err
 	return g.Wait()
 }
 
-func parallelScaleFromZero(ctx context.Context, clients *test.Clients, objs []*v1test.ResourceObjects, reporter *performance.InfluxReporter, vegetaReporter *performance.VegetaReporter) {
+func parallelScaleFromZero(ctx context.Context, clients *test.Clients, objs []*v1test.ResourceObjects, reporter *performance.DataPointReporter, vegetaReporter *performance.VegetaReporter) {
 	count := len(objs)
 	var wg sync.WaitGroup
 	wg.Add(count)
@@ -263,16 +263,16 @@ func parallelScaleFromZero(ctx context.Context, clients *test.Clients, objs []*v
 			serviceReadyDuration, deploymentUpdatedDuration, err := runScaleFromZero(ctx, clients, ndx, objs[ndx])
 			if err == nil {
 				vegetaReporter.AddResult(&vegeta.Result{Latency: serviceReadyDuration})
-				reporter.AddDataPoint(benchmarkName, map[string]interface{}{
+				(*reporter).AddDataPoint(benchmarkName, map[string]interface{}{
 					"service-ready-latency": serviceReadyDuration.Milliseconds(),
 				})
-				reporter.AddDataPoint(benchmarkName, map[string]interface{}{
+				(*reporter).AddDataPoint(benchmarkName, map[string]interface{}{
 					"deployment-updated-latency": deploymentUpdatedDuration.Milliseconds(),
 				})
 			} else {
 				// Add 1 to the error metric whenever there is an error.
-				reporter.AddDataPoint(benchmarkName, map[string]interface{}{
-					"errors": 1,
+				(*reporter).AddDataPoint(benchmarkName, map[string]interface{}{
+					"errors": float64(1),
 				})
 			}
 		}()

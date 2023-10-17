@@ -23,6 +23,13 @@ git commit -sm ":fire: remove unneeded workflows" .github/
 # Update openshift's main and take all needed files from there.
 git fetch openshift main
 git checkout openshift/main openshift OWNERS_ALIASES OWNERS Makefile
+
+# Update deps for ES client used in Performance Tests
+git apply openshift/performance/patches/*
+./hack/update-deps.sh
+git add .
+git commit -m ":fire: Add openshift files and apply performance patches"
+
 # Apply patches .
 git apply openshift/patches/*
 git add .

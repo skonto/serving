@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20210609063737-0067dc6dcea2
 	github.com/davecgh/go-spew v1.1.1
+	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.13.0
@@ -14,6 +15,7 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/influxdata/influxdb-client-go/v2 v2.9.0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/opensearch-project/opensearch-go v1.1.0
 	github.com/tsenart/vegeta/v12 v12.11.1
 	go.opencensus.io v0.24.0
 	go.uber.org/atomic v1.9.0

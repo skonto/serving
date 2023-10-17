@@ -118,11 +118,11 @@ func main() {
 	targeter := vegeta.NewStaticTargeter(t.target)
 	attacker := vegeta.NewAttacker(vegeta.Timeout(30 * time.Second))
 
-	influxReporter, err := performance.NewInfluxReporter(map[string]string{"target": *target})
+	reporter, err := performance.NewDataPointReporterFactory(map[string]string{"target": *target}, benchmarkName)
 	if err != nil {
-		log.Fatalf("failed to create influx reporter: %v", err.Error())
+		log.Fatalf("failed to create reporter: %v", err.Error())
 	}
-	defer influxReporter.FlushAndShutdown()
+	defer reporter.FlushAndShutdown()
 
 	// Start the attack!
 	results := attacker.Attack(targeter, rate, *duration, "load-test")
@@ -140,7 +140,7 @@ LOOP:
 
 		case ds := <-deploymentStatus:
 			// Report number of ready activators.
-			influxReporter.AddDataPoint(benchmarkName, map[string]interface{}{"activator-pod-count": ds.ReadyReplicas})
+			reporter.AddDataPoint(benchmarkName, map[string]interface{}{"activator-pod-count": float64(ds.ReadyReplicas)})
 
 		case res, ok := <-results:
 			if ok {
@@ -156,12 +156,12 @@ LOOP:
 	metricResults.Close()
 
 	// Report the results
-	influxReporter.AddDataPointsForMetrics(metricResults, benchmarkName)
+	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
 	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
 	if err := checkSLA(metricResults, t.slaMin, t.slaMax); err != nil {
 		// make sure to still write the stats
-		influxReporter.FlushAndShutdown()
+		reporter.FlushAndShutdown()
 		log.Fatalf(err.Error())
 	}
 

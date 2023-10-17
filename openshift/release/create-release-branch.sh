@@ -24,6 +24,11 @@ make RELEASE=$release generate-release
 git add .github/workflows openshift OWNERS_ALIASES OWNERS Makefile
 git commit -m "Add openshift specific files."
 
+git apply openshift/performance/patches/*
+./hack/update-deps.sh
+git add .
+git commit -m ":fire: Apply performance patches"
+
 # Apply patches .
 PATCH_DIR="openshift/patches"
 # Use release-specific patch dir if exists
