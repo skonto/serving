@@ -22,21 +22,24 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 	v1 "k8s.io/api/apps/v1"
+	netapi "knative.dev/networking/pkg/apis/networking"
+	"knative.dev/pkg/environment"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/signals"
+	"knative.dev/serving/test/performance/performance"
 
-	"github.com/google/mako/go/quickstore"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/watch"
-	"knative.dev/pkg/environment"
-	"knative.dev/pkg/test/mako"
 	"knative.dev/pkg/test/spoof"
 	"knative.dev/serving/pkg/apis/serving"
-	"knative.dev/serving/test/performance"
 
 	"golang.org/x/sync/errgroup"
 
@@ -51,18 +54,126 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	parallelCount = flag.Int("parallel", 0, "The count of ksvcs we want to run scale-from-zero in parallel")
-)
-
 const (
-	benchmarkName            = "Development - Serving scale from zero"
-	testNamespace            = "default"
+	benchmarkName            = "Knative Serving scale from zero"
+	namespace                = "default"
 	serviceName              = "perftest-scalefromzero"
 	helloWorldExpectedOutput = "Hello World!"
 	helloWorldImage          = "helloworld"
-	waitToServe              = 2 * time.Minute
+	waitToServe              = 5 * time.Minute
 )
+
+var (
+	parallelCount = flag.Int("parallel", 0, "The count of ksvcs we want to run scale-from-zero in parallel")
+
+	// Map the above to our benchmark targets.
+	slas = map[int]struct {
+		p95min     time.Duration
+		p95max     time.Duration
+		latencyMax time.Duration
+	}{
+		1: {
+			// Scaling one service from zero should be around 10ms
+			p95min:     0,
+			p95max:     15 * time.Millisecond,
+			latencyMax: 15 * time.Millisecond,
+		},
+		5: {
+			// Scaling five service from zero should be around 15ms
+			p95min:     0,
+			p95max:     15 * time.Millisecond,
+			latencyMax: 20 * time.Millisecond,
+		},
+		25: {
+			// Scaling 25 services in parallel will hit some API limits, which cause a step
+			// in the deployment updated time which adds to the total time until a service is ready
+			p95min:     0,
+			p95max:     2 * time.Second,
+			latencyMax: 5 * time.Second,
+		},
+		100: {
+			// Scaling 100 services in parallel will hit some API limits, which cause a step
+			// in the deployment updated time which adds to the total time until a service is ready
+			p95min:     0,
+			p95max:     15 * time.Second,
+			latencyMax: 20 * time.Second,
+		},
+	}
+)
+
+func main() {
+	log.Println("Starting scale from zero test")
+
+	ctx := signals.NewContext()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	// To make testing.T work properly
+	testing.Init()
+
+	env := environment.ClientConfig{}
+
+	// The local domain is directly resolvable by the test
+	flag.Set("resolvabledomain", "true")
+	flag.Parse()
+
+	cfg, err := env.GetRESTConfig()
+	if err != nil {
+		log.Fatalf("failed to get kubeconfig %s", err)
+	}
+
+	ctx, _ = injection.EnableInjectionOrDie(ctx, cfg)
+
+	clients, err := test.NewClients(cfg, namespace)
+	if err != nil {
+		log.Fatal("Failed to setup clients: ", err)
+	}
+
+	reporter, err := performance.NewDataPointReporterFactory(map[string]string{"parallel": strconv.Itoa(*parallelCount)}, benchmarkName)
+	if err != nil {
+		log.Fatalf("Failed to create data point reporter: %v", err)
+	}
+	defer reporter.FlushAndShutdown()
+
+	// We use vegeta.Metrics here as a metrics collector because it already contains logic to calculate percentiles
+	vegetaReporter := performance.NewVegetaReporter()
+
+	// Create the services once.
+	services, cleanup, err := createServices(clients, *parallelCount)
+	if err != nil {
+		log.Fatalf("Failed to create services: %v", err)
+	}
+	defer cleanup()
+
+	// Wrap fatalf in a helper to clean up created resources
+	fatalf := func(f string, args ...interface{}) {
+		cleanup()
+		vegetaReporter.StopAndCollectMetrics()
+		log.Fatalf(f, args...)
+	}
+
+	// Wait all services scaling to zero.
+	if err := waitForScaleToZero(ctx, services); err != nil {
+		fatalf("Failed to wait for all services to scale to zero: %v", err)
+	}
+
+	parallelScaleFromZero(ctx, clients, services, &reporter, vegetaReporter)
+
+	metricResults := vegetaReporter.StopAndCollectMetrics()
+
+	// Report the results
+	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
+	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
+
+	sla := slas[*parallelCount]
+	if err := checkSLA(metricResults, sla.p95min, sla.p95max, sla.latencyMax); err != nil {
+		// make sure to still write the stats
+		reporter.FlushAndShutdown()
+		log.Fatalf(err.Error())
+	}
+
+	log.Println("Scale from zero test completed")
+}
 
 func createServices(clients *test.Clients, count int) ([]*v1test.ResourceObjects, func(), error) {
 	testNames := make([]*test.ResourceNames, count)
@@ -99,6 +210,7 @@ func createServices(clients *test.Clients, count int) ([]*v1test.ResourceObjects
 		ktest.WithConfigAnnotations(map[string]string{
 			autoscaling.WindowAnnotationKey: "7s",
 		}),
+		ktest.WithServiceLabel(netapi.VisibilityLabelKey, serving.VisibilityClusterLocal),
 	}
 	g := errgroup.Group{}
 	for i := 0; i < count; i++ {
@@ -129,7 +241,7 @@ func waitForScaleToZero(ctx context.Context, objs []*v1test.ResourceObjects) err
 				serving.ServiceLabelKey: ro.Service.Name,
 			})
 
-			if err := performance.WaitForScaleToZero(ctx, testNamespace, selector, 2*time.Minute); err != nil {
+			if err := performance.WaitForScaleToZero(ctx, namespace, selector, 2*time.Minute); err != nil {
 				m := fmt.Sprintf("%02d: failed waiting for deployment to scale to zero: %v", idx, err)
 				log.Println(m)
 				return errors.New(m)
@@ -140,37 +252,28 @@ func waitForScaleToZero(ctx context.Context, objs []*v1test.ResourceObjects) err
 	return g.Wait()
 }
 
-func parallelScaleFromZero(ctx context.Context, clients *test.Clients, objs []*v1test.ResourceObjects, q *quickstore.Quickstore) {
+func parallelScaleFromZero(ctx context.Context, clients *test.Clients, objs []*v1test.ResourceObjects, reporter *performance.DataPointReporter, vegetaReporter *performance.VegetaReporter) {
 	count := len(objs)
-	// Get the key for saving latency and error metrics in the benchmark.
-	lk := "l" + strconv.Itoa(count)
-	dlk := "dl" + strconv.Itoa(count)
-	ek := "e" + strconv.Itoa(count)
 	var wg sync.WaitGroup
 	wg.Add(count)
 	for i := 0; i < count; i++ {
 		ndx := i
 		go func() {
 			defer wg.Done()
-			sdur, ddur, err := runScaleFromZero(ctx, clients, ndx, objs[ndx])
+			serviceReadyDuration, deploymentUpdatedDuration, err := runScaleFromZero(ctx, clients, ndx, objs[ndx])
 			if err == nil {
-				q.AddSamplePoint(mako.XTime(time.Now()), map[string]float64{
-					lk: sdur.Seconds(),
+				vegetaReporter.AddResult(&vegeta.Result{Latency: serviceReadyDuration})
+				(*reporter).AddDataPoint(benchmarkName, map[string]interface{}{
+					"service-ready-latency": serviceReadyDuration.Milliseconds(),
 				})
-				q.AddSamplePoint(mako.XTime(time.Now()), map[string]float64{
-					dlk: ddur.Seconds(),
+				(*reporter).AddDataPoint(benchmarkName, map[string]interface{}{
+					"deployment-updated-latency": deploymentUpdatedDuration.Milliseconds(),
 				})
-				performance.AddInfluxPoint(benchmarkName, map[string]interface{}{"lk": sdur.Seconds()})
-				performance.AddInfluxPoint(benchmarkName, map[string]interface{}{"dlk": ddur.Seconds()})
 			} else {
 				// Add 1 to the error metric whenever there is an error.
-				q.AddSamplePoint(mako.XTime(time.Now()), map[string]float64{
-					ek: 1,
+				(*reporter).AddDataPoint(benchmarkName, map[string]interface{}{
+					"errors": float64(1),
 				})
-				performance.AddInfluxPoint(benchmarkName, map[string]interface{}{"ek": float64(1)})
-				// By reporting errors like this, the error strings show up on
-				// the details page for each Mako run.
-				q.AddError(mako.XTime(time.Now()), err.Error())
 			}
 		}()
 	}
@@ -183,18 +286,18 @@ func runScaleFromZero(ctx context.Context, clients *test.Clients, idx int, ro *v
 		serving.ServiceLabelKey: ro.Service.Name,
 	})
 
-	watcher, err := clients.KubeClient.AppsV1().Deployments(testNamespace).Watch(
+	watcher, err := clients.KubeClient.AppsV1().Deployments(namespace).Watch(
 		ctx, metav1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
-		m := fmt.Sprintf("%02d: unable to watch the deployment for the service: %v", idx, err)
-		log.Println(m)
-		return 0, 0, errors.New(m)
+		msg := fmt.Sprintf("%02d: unable to watch the deployment for the service: %v", idx, err)
+		log.Println(msg)
+		return 0, 0, errors.New(msg)
 	}
 	defer watcher.Stop()
 
-	ddch := watcher.ResultChan()
-	sdch := make(chan struct{})
-	errch := make(chan error)
+	deploymentChangeChan := watcher.ResultChan()
+	serviceReadyChan := make(chan struct{})
+	errorChan := make(chan error)
 
 	go func() {
 		log.Printf("%02d: waiting for endpoint to serve request", idx)
@@ -211,11 +314,11 @@ func runScaleFromZero(ctx context.Context, clients *test.Clients, idx int, ro *v
 		if err != nil {
 			m := fmt.Sprintf("%02d: the endpoint for Route %q at %q didn't serve the expected text %q: %v", idx, ro.Route.Name, url, helloWorldExpectedOutput, err)
 			log.Println(m)
-			errch <- errors.New(m)
+			errorChan <- errors.New(m)
 			return
 		}
 
-		sdch <- struct{}{}
+		serviceReadyChan <- struct{}{}
 	}()
 
 	start := time.Now()
@@ -223,67 +326,39 @@ func runScaleFromZero(ctx context.Context, clients *test.Clients, idx int, ro *v
 	var dd time.Duration
 	for {
 		select {
-		case event := <-ddch:
+		case event := <-deploymentChangeChan:
 			if event.Type == watch.Modified {
 				dm := event.Object.(*v1.Deployment)
 				if *dm.Spec.Replicas != 0 && dd == 0 {
 					dd = time.Since(start)
 				}
 			}
-		case <-sdch:
-			return time.Since(start), dd, nil
-		case err := <-errch:
+		case <-serviceReadyChan:
+			since := time.Since(start)
+			log.Printf("Service is ready after: name: %s, deployment-updated: %vms, service-ready-since-deployment: %vms, service-ready-total: %vms",
+				ro.Service.Name, dd.Milliseconds(), (since - dd).Milliseconds(), since.Milliseconds())
+			return since, dd, nil
+		case err := <-errorChan:
+			log.Println("Service scaling failed: ", ro.Service.Name, err.Error())
 			return 0, 0, err
 		}
 	}
 }
 
-func testScaleFromZero(clients *test.Clients, count int) {
-	parallelTag := fmt.Sprintf("parallel=%d", count)
-	mc, err := mako.Setup(context.Background(), parallelTag)
-	if err != nil {
-		log.Fatal("failed to setup mako: ", err)
-	}
-	q, qclose, ctx := mc.Quickstore, mc.ShutDownFunc, mc.Context
-	defer qclose(ctx)
-
-	// Create the services once.
-	objs, cleanup, err := createServices(clients, count)
-	// Wrap fatalf in a helper or our sidecar will live forever, also wrap cleanup.
-	fatalf := func(f string, args ...interface{}) {
-		cleanup()
-		qclose(ctx)
-		log.Fatalf(f, args...)
-	}
-	if err != nil {
-		fatalf("Failed to create services: %v", err)
-	}
-	defer cleanup()
-
-	// Wait all services scaling to zero.
-	if err := waitForScaleToZero(ctx, objs); err != nil {
-		fatalf("Failed to wait for all services to scale to zero: %v", err)
+func checkSLA(results *vegeta.Metrics, p95min time.Duration, p95max time.Duration, latencyMax time.Duration) error {
+	// SLA 1: The p95 latency hitting the target has to be between the range defined
+	if results.Latencies.P95 >= p95min && results.Latencies.P95 <= p95max {
+		log.Printf("SLA 1 passed. P95 latency is in %d-%dms time range", p95min, p95max)
+	} else {
+		return fmt.Errorf("SLA 1 failed. P95 latency is not in %d-%dms time range: %s", p95min, p95max, results.Latencies.P95)
 	}
 
-	parallelScaleFromZero(ctx, clients, objs, q)
-	if err := mc.StoreAndHandleResult(); err != nil {
-		fatalf("Failed to store and handle benchmarking result: %v", err)
-	}
-}
-
-func main() {
-	env := environment.ClientConfig{}
-	flag.Parse()
-
-	cfg, err := env.GetRESTConfig()
-	if err != nil {
-		log.Fatalf("failed to get kubeconfig %s", err)
+	// SLA 2: The max latency hitting the target has to be between the range defined
+	if results.Latencies.Max <= latencyMax {
+		log.Printf("SLA 2 passed. Max latency is below or equal to %dms", latencyMax)
+	} else {
+		return fmt.Errorf("SLA 2 failed. Max latency is higher than %dms: %s", latencyMax, results.Latencies.Max)
 	}
 
-	clients, err := test.NewClients(cfg, testNamespace)
-	if err != nil {
-		log.Fatal("Failed to setup clients: ", err)
-	}
-
-	testScaleFromZero(clients, *parallelCount)
+	return nil
 }

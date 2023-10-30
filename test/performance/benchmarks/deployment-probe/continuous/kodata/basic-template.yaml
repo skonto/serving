@@ -1,4 +1,4 @@
-# Copyright 2019 The Knative Authors
+# Copyright 2022 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +15,25 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  generateName: basic-
+  name: activator-with-cc-lin
   namespace: default
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "100"
+        autoscaling.knative.dev/maxScale: "150"
+        # Always hook the activator in.
+        autoscaling.knative.dev/targetBurstCapacity: "-1"
     spec:
-      enableServiceLinks: false
       containers:
-      - image: gcr.io/knative-samples/autoscale-go:0.1
-        # Limit resources so that we can pack more on-cluster.
+      - image: ko://knative.dev/serving/test/test_images/autoscale
         resources:
           requests:
-            cpu: 10m
-            memory: 50Mi
+            cpu: 20m
+            memory: 20Mi
           limits:
-            cpu: 30m
+            cpu: 50m
             memory: 50Mi
+      containerConcurrency: 5
+---

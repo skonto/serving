@@ -15,76 +15,70 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: activator-with-cc
+  name: activator
   namespace: default
 spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "100"
-        autoscaling.knative.dev/maxScale: "150"
-        # Always hook the activator in.
-        autoscaling.knative.dev/targetBurstCapacity: "-1"
-        autoscaling.knative.dev/metricAggregationAlgorithm: "weightedExponential"
-    spec:
-      containers:
-      - image: ko://knative.dev/serving/test/test_images/autoscale
-        resources:
-          requests:
-            cpu: 20m
-            memory: 20Mi
-          limits:
-            cpu: 50m
-            memory: 50Mi
-      containerConcurrency: 5
----
-apiVersion: serving.knative.dev/v1
-kind: Service
-metadata:
-  name: activator-with-cc-lin
-  namespace: default
-spec:
-  template:
-    metadata:
-      annotations:
-        autoscaling.knative.dev/minScale: "100"
-        autoscaling.knative.dev/maxScale: "150"
+        autoscaling.knative.dev/minScale: "5"
+        autoscaling.knative.dev/maxScale: "5"
         # Always hook the activator in.
         autoscaling.knative.dev/targetBurstCapacity: "-1"
     spec:
       containers:
       - image: ko://knative.dev/serving/test/test_images/autoscale
-        resources:
-          requests:
-            cpu: 20m
-            memory: 20Mi
-          limits:
-            cpu: 50m
-            memory: 50Mi
-      containerConcurrency: 5
+      containerConcurrency: 0 # Explicitly set the default, since it might be overridden in CM.
 ---
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: queue-proxy-with-cc
+  name: queue-proxy
   namespace: default
 spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "100"
-        autoscaling.knative.dev/maxScale: "150"
+        autoscaling.knative.dev/minScale: "5"
+        autoscaling.knative.dev/maxScale: "5"
         # Only hook the activator in when scaled to zero.
         autoscaling.knative.dev/targetBurstCapacity: "0"
     spec:
       containers:
       - image: ko://knative.dev/serving/test/test_images/autoscale
-        resources:
-          requests:
-            cpu: 20m
-            memory: 20Mi
-          limits:
-            cpu: 50m
-            memory: 50Mi
-      containerConcurrency: 5
+      containerConcurrency: 0 # Explicitly set the default, since it might be overridden in CM.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: deployment
+  namespace: default
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: app1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment
+  namespace: default
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      labels:
+        app: app1
+    spec:
+      containers:
+      - name: user-container
+        image: ko://knative.dev/serving/test/test_images/autoscale
+        ports:
+        - name: app1
+          containerPort: 8080
 ---
