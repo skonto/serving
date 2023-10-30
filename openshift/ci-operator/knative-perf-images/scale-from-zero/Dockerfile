@@ -7,6 +7,5 @@ RUN make install test-install perf-install
 FROM openshift/origin-base
 USER 65532
 
-COPY ${kodata_path} /var/run/ko
-COPY --from=builder /go/bin/${bin} /ko-app/${bin}
-ENTRYPOINT ["/ko-app/${bin}"]
+COPY --from=builder /go/bin/scale-from-zero /ko-app/scale-from-zero
+ENTRYPOINT ["/ko-app/scale-from-zero"]
