@@ -115,11 +115,11 @@ func main() {
 		log.Fatal("Failed to setup clients: ", err)
 	}
 
-	influxReporter, err := performance.NewInfluxReporter(map[string]string{"number-of-services": strconv.Itoa(*numberOfServices)})
+	reporter, err := performance.NewDataPointReporterFactory(map[string]string{"number-of-services": strconv.Itoa(*numberOfServices)}, benchmarkName)
 	if err != nil {
-		log.Fatalf("failed to create influx reporter: %v", err.Error())
+		log.Fatalf("failed to create reporter: %v", err.Error())
 	}
-	defer influxReporter.FlushAndShutdown()
+	defer reporter.FlushAndShutdown()
 
 	log.Printf("Creating %d Knative Services", *numberOfServices)
 	services, cleanup, err := createServices(clients, *numberOfServices)
@@ -179,12 +179,12 @@ LOOP:
 	metricResults.Close()
 
 	// Report the results
-	influxReporter.AddDataPointsForMetrics(metricResults, benchmarkName)
+	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
 	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
 	if err := checkSLA(metricResults); err != nil {
 		cleanup()
-		influxReporter.FlushAndShutdown()
+		reporter.FlushAndShutdown()
 		log.Fatal(err.Error())
 	}
 

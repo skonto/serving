@@ -1679,19 +1679,6 @@ index 000000000..2317c746a
 +	}
 +	return &indexer, nil
 +}
-diff --git a/test/performance/performance/performance.go b/test/performance/performance/performance.go
-index 75de23efb..22b096f7c 100644
---- a/test/performance/performance/performance.go
-+++ b/test/performance/performance/performance.go
-@@ -62,7 +62,7 @@ func ProbeTargetTillReady(target string, duration time.Duration) error {
- func WaitForScaleToZero(ctx context.Context, namespace string, selector labels.Selector, duration time.Duration) error {
- 	pl := podinformer.Get(ctx).Lister()
- 	begin := time.Now()
--	return wait.PollUntilContextTimeout(ctx, time.Second, duration, true, func(context.Context) (bool, error) {
-+	return wait.PollImmediate(time.Second, duration, func() (bool, error) {
- 		pods, err := pl.Pods(namespace).List(selector)
- 		if err != nil {
- 			return false, err
 diff --git a/test/performance/performance/reporter.go b/test/performance/performance/reporter.go
 new file mode 100644
 index 000000000..6a3c41539
