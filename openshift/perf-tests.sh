@@ -18,7 +18,7 @@ go get github.com/opensearch-project/opensearch-go@v1.1.0
 "$(dirname "${BASH_SOURCE[0]}")/../hack/update-deps.sh"
 
 git add .
-git commit -m "opernshift perf update"
+git commit -m "openshift perf update"
 
 git apply "$(dirname "$0")/patches/001-object.patch"
 git apply "$(dirname "$0")/patches/002-mutemetrics.patch"
