@@ -1,3 +1,74 @@
+diff --git a/Makefile b/Makefile
+index 9e3172f82..4da396560 100644
+--- a/Makefile
++++ b/Makefile
+@@ -6,6 +6,7 @@ CORE_IMAGES=./cmd/activator ./cmd/autoscaler ./cmd/autoscaler-hpa ./cmd/controll
+ TEST_IMAGES=$(shell find ./test/test_images ./test/test_images/multicontainer -mindepth 1 -maxdepth 1 -type d)
+ # Exclude wrapper images like multicontainer and initcontainers as those are just ko convenience wrappers used upstream. The openshift serverless tests use other images to run.
+ TEST_IMAGES_WITHOUT_WRAPPERS=$(shell find ./test/test_images ./test/test_images/multicontainer -mindepth 1 -maxdepth 1 -type d -not -name multicontainer -not -name initcontainers)
++PERF_IMAGES=$(shell find ./test/performance/benchmarks -mindepth 1 -maxdepth 1)
+ BRANCH=
+ TEST=
+ IMAGE=
+@@ -26,10 +27,20 @@ test-install:
+ 	done
+ .PHONY: test-install
+
++perf-install:
++	for img in $(PERF_IMAGES); do \
++		go install $$img ; \
++	done
++.PHONY: perf-install
++
+ test-e2e:
+ 	./openshift/e2e-tests.sh
+ .PHONY: test-e2e
+
++perf-tests:
++	./openshift/perf-tests.sh
++.PHONY: perf-tests
++
+ test-e2e-tls:
+ 	ENABLE_INTERNAL_TLS="true" ./openshift/e2e-tests.sh
+ .PHONY: test-e2e-tls
+@@ -60,8 +71,9 @@ test-e2e-local:
+
+ # Generate Dockerfiles for core and test images used by ci-operator. The files need to be committed manually.
+ generate-dockerfiles:
+-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images $(CORE_IMAGES)
+-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-test-images $(TEST_IMAGES_WITHOUT_WRAPPERS)
++	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images $(CORE_IMAGES); \
++	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-test-images $(TEST_IMAGES_WITHOUT_WRAPPERS); \
++    ./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-perf-images $(PERF_IMAGES)
+ .PHONY: generate-dockerfiles
+
+ # Generate an aggregated knative yaml file with replaced image references
+diff --git a/openshift/ci-operator/Dockerfile.in b/openshift/ci-operator/Dockerfile.in
+index 32b94bfb1..ce192d43d 100644
+--- a/openshift/ci-operator/Dockerfile.in
++++ b/openshift/ci-operator/Dockerfile.in
+@@ -2,7 +2,7 @@
+ FROM registry.ci.openshift.org/openshift/release:golang-1.19 as builder
+
+ COPY . .
+-RUN make install test-install
++RUN make install test-install perf-install
+
+ FROM openshift/origin-base
+ USER 65532
+diff --git a/openshift/ci-operator/Dockerfile_with_kodata.in b/openshift/ci-operator/Dockerfile_with_kodata.in
+index 00de72095..0422ce541 100644
+--- a/openshift/ci-operator/Dockerfile_with_kodata.in
++++ b/openshift/ci-operator/Dockerfile_with_kodata.in
+@@ -2,7 +2,7 @@
+ FROM registry.ci.openshift.org/openshift/release:golang-1.19 as builder
+
+ COPY . .
+-RUN make install test-install
++RUN make install test-install perf-install
+
+ FROM openshift/origin-base
+ USER 65532
 diff --git a/test/performance/README.md b/test/performance/README.md
 index a4906039a..f17f7cffc 100644
 --- a/test/performance/README.md
@@ -5,7 +76,7 @@ index a4906039a..f17f7cffc 100644
 @@ -76,6 +76,52 @@ export INFLUX_TOKEN=$(kubectl get secret local-influx-influxdb2-auth -o "jsonpat
  ./visualization/setup-influx-db.sh
  ```
- 
+
 +### Elastic Search / Opensearch
 +
 +```bash
@@ -53,7 +124,7 @@ index a4906039a..f17f7cffc 100644
 +```
 +
  ### Local grafana dashboards
- 
+
  Use an existing grafana instance or create one on your cluster, [see docs](https://grafana.com/docs/grafana/latest/setup-grafana/installation/kubernetes/).
 diff --git a/test/performance/benchmarks/dataplane-probe/dataplane-probe-activator.yaml b/test/performance/benchmarks/dataplane-probe/dataplane-probe-activator.yaml
 index af0d32631..9c2b2da4d 100644
@@ -1679,19 +1750,6 @@ index 000000000..2317c746a
 +	}
 +	return &indexer, nil
 +}
-diff --git a/test/performance/performance/performance.go b/test/performance/performance/performance.go
-index 75de23efb..22b096f7c 100644
---- a/test/performance/performance/performance.go
-+++ b/test/performance/performance/performance.go
-@@ -62,7 +62,7 @@ func ProbeTargetTillReady(target string, duration time.Duration) error {
- func WaitForScaleToZero(ctx context.Context, namespace string, selector labels.Selector, duration time.Duration) error {
- 	pl := podinformer.Get(ctx).Lister()
- 	begin := time.Now()
--	return wait.PollUntilContextTimeout(ctx, time.Second, duration, true, func(context.Context) (bool, error) {
-+	return wait.PollImmediate(time.Second, duration, func() (bool, error) {
- 		pods, err := pl.Pods(namespace).List(selector)
- 		if err != nil {
- 			return false, err
 diff --git a/test/performance/performance/reporter.go b/test/performance/performance/reporter.go
 new file mode 100644
 index 000000000..6a3c41539
