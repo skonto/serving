@@ -8,7 +8,7 @@ env
 
 failed=0
 
-git apply "$(dirname "$0")/performance/patches/perf.patch"
+git apply "$(dirname "$0")/performance/patches/*"
 
 make generate-dockerfiles
 
