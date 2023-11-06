@@ -30,6 +30,10 @@ test-e2e:
 	./openshift/e2e-tests.sh
 .PHONY: test-e2e
 
+perf-tests:
+	./openshift/perf-tests.sh
+.PHONY: perf-tests
+
 test-e2e-tls:
 	ENABLE_INTERNAL_TLS="true" ./openshift/e2e-tests.sh
 .PHONY: test-e2e-tls
