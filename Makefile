@@ -32,9 +32,9 @@ test-e2e:
 
 perf-tests:
 	export ES_DEVELOPMENT=true && \
-    export ES_HOST_PORT=search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com && \
-    export USE_OPEN_SEARCH=true && \
-    export SYSTEM_NAMESPACE=knative-serving && \
+	export ES_HOST_PORT=search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com && \
+	export USE_OPEN_SEARCH=true && \
+	export SYSTEM_NAMESPACE=knative-serving && \
 	./openshift/perf-tests.sh
 .PHONY: perf-tests
 
