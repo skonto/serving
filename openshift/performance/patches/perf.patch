@@ -1,7 +1,7 @@
-diff --git a/Makefile b/Makefile
-index 9e3172f82..4da396560 100644
---- a/Makefile
-+++ b/Makefile
+diff --git b/Makefile a/Makefile
+index 57d918069..4da396560 100644
+--- b/Makefile
++++ a/Makefile
 @@ -6,6 +6,7 @@ CORE_IMAGES=./cmd/activator ./cmd/autoscaler ./cmd/autoscaler-hpa ./cmd/controll
  TEST_IMAGES=$(shell find ./test/test_images ./test/test_images/multicontainer -mindepth 1 -maxdepth 1 -type d)
  # Exclude wrapper images like multicontainer and initcontainers as those are just ko convenience wrappers used upstream. The openshift serverless tests use other images to run.
@@ -10,10 +10,10 @@ index 9e3172f82..4da396560 100644
  BRANCH=
  TEST=
  IMAGE=
-@@ -26,10 +27,20 @@ test-install:
+@@ -26,6 +27,12 @@ test-install:
  	done
  .PHONY: test-install
- 
+
 +perf-install:
 +	for img in $(PERF_IMAGES); do \
 +		go install $$img ; \
@@ -23,15 +23,7 @@ index 9e3172f82..4da396560 100644
  test-e2e:
  	./openshift/e2e-tests.sh
  .PHONY: test-e2e
- 
-+perf-tests:
-+	./openshift/perf-tests.sh
-+.PHONY: perf-tests
-+
- test-e2e-tls:
- 	ENABLE_INTERNAL_TLS="true" ./openshift/e2e-tests.sh
- .PHONY: test-e2e-tls
-@@ -60,8 +71,9 @@ test-e2e-local:
+@@ -64,8 +71,9 @@ test-e2e-local:
  
  # Generate Dockerfiles for core and test images used by ci-operator. The files need to be committed manually.
  generate-dockerfiles:
