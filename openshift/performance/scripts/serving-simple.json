@@ -1,0 +1,77 @@
+{
+  "spec": {
+    "workloads": [
+      {
+        "name": "activator",
+        "replicas": 4,
+        "resources": [
+          {
+            "container": "activator",
+            "requests": {
+              "cpu": "500m",
+              "memory": "1000Mi"
+            },
+            "limits": {
+              "cpu": "5000m",
+              "memory": "5000Mi"
+            }
+          }
+        ]
+      },
+      {
+        "name": "controller",
+        "resources": [
+          {
+            "container": "controller",
+            "requests": {
+              "cpu": "500m",
+              "memory": "500Mi"
+            },
+            "limits": {
+              "cpu": "5000m",
+              "memory": "5000Mi"
+            }
+          }
+        ]
+      },
+      {
+        "name": "autoscaler",
+        "replicas": 1,
+        "resources": [
+          {
+            "container": "autoscaler",
+            "requests": {
+              "cpu": "500m",
+              "memory": "500Mi"
+            },
+            "limits": {
+              "cpu": "5000m",
+              "memory": "5000Mi"
+            }
+          }
+        ]
+      },
+      {
+        "name": "webhook",
+        "replicas": 2,
+        "resources": [
+          {
+            "container": "webhook",
+            "requests": {
+              "cpu": "500m",
+              "memory": "500Mi"
+            },
+            "limits": {
+              "cpu": "5000m",
+              "memory": "5000Mi"
+            }
+          }
+        ]
+      },
+      {
+        "name": "3scale-kourier-gateway",
+        "replicas": 10
+      }
+    ]
+  }
+}

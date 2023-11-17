@@ -47,7 +47,7 @@ if [[ "${ISOLATE_SERVERLESS:-false}" == "true" ]]; then
 
   oc patch knativeserving knative-serving \
     -n "${SYSTEM_NAMESPACE}" \
-    --type merge --patch '{"spec":{"workloads":[{"name":"activator","replicas":2,"resources":[{"container":"activator","requests":{"cpu":"500m","memory":"1000Mi"},"limits":{"cpu":"2000m","memory":"4000Mi"}}],"tolerations":[{"key":"knative-activator","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"knative-activator":"true"}},{"name":"controller","tolerations":[{"key":"serverless","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"serverless":"true"}},{"name":"domain-mapping","tolerations":[{"key":"serverless","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"serverless":"true"}},{"name":"domainmapping-webhook","tolerations":[{"key":"serverless","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"serverless":"true"}},{"name":"net-kourier-controller","tolerations":[{"key":"serverless","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"serverless":"true"}},{"name":"autoscaler","tolerations":[{"key":"serverless","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"serverless":"true"}},{"name":"webhook","tolerations":[{"key":"serverless","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"serverless":"true"}},{"name":"autoscaler-hpa","tolerations":[{"key":"serverless","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"serverless":"true"}},{"name":"3scale-kourier-gateway","tolerations":[{"key":"knative-ingress","operator":"Equal","effect":"NoSchedule","value":"true"}],"nodeSelector":{"knative-ingress":"true"}}]}}'
+    --type merge --patch-file "$(dirname "$0")/serving-isolated.json"
 
   # enforce all pods to be re-scheduled on the new nodes only
   oc delete po --all -n knative-serving --force --grace-period=0
@@ -61,128 +61,139 @@ else
   for name in $(oc get machineset -n openshift-machine-api -o name); do oc scale "$name" -n openshift-machine-api --replicas=4; done
   oc wait --for=jsonpath="{.status.availableReplicas}=4" machineset --all -n openshift-machine-api --timeout=-1s
 
+#  oc patch knativeserving knative-serving \
+#    -n "${SYSTEM_NAMESPACE}" \
+#    --type merge --patch '{"metadata": {"annotations": {"serverless.openshift.io/default-enable-http2": "true" }}}'
+
   oc patch knativeserving knative-serving \
     -n "${SYSTEM_NAMESPACE}" \
-    --type merge --patch '{"metadata": {"annotations": {"serverless.openshift.io/default-enable-http2": "true" }}}'
+    --type merge --patch-file "$(dirname "$0")/serving-simple.json"
+
+  # remove pods and start fresh
+  oc delete po --all -n knative-serving --force --grace-period=0
+  oc delete po --all -n knative-serving-ingress --force --grace-period=0
+
+  # make sure we are in good shape after patching
+  oc wait --for=condition=Ready knativeserving.operator.knative.dev knative-serving -n "${SYSTEM_NAMESPACE}" --timeout=900s
 fi
 
 ###############################################################################################
-header "Real traffic test"
-toggle_feature kubernetes.podspec-init-containers Enabled
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_REAL_TRAFFIC_TEST}," "${SERVING}/test/performance/benchmarks/real-traffic-test/real-traffic-test.yaml"
-run_job real-traffic-test "${SERVING}/test/performance/benchmarks/real-traffic-test/real-traffic-test.yaml" "${KNATIVE_SERVING_REAL_TRAFFIC_TEST%/*}"
-sleep 100 # wait a bit for the cleanup to be done
-kubectl delete ksvc -n "$ns" --all --wait --now
-toggle_feature kubernetes.podspec-init-containers Disabled
-
-###############################################################################################
-header "Dataplane probe: Setup"
-
-pushd "$SERVING"
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_TEST_AUTOSCALE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-setup.yaml"
-oc apply -f "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-setup.yaml"
-popd
-oc wait --timeout=60s --for=condition=ready ksvc -n "$ns" --all
-oc wait --timeout=60s --for=condition=available deploy -n "$ns" deployment
-
-##############################################################################################
-header "Dataplane probe: deployment"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_DATAPLANE_PROBE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-deployment.yaml"
-run_job dataplane-probe-deployment "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-deployment.yaml" "${KNATIVE_SERVING_DATAPLANE_PROBE%/*}"
-
-# additional clean up
-oc delete deploy deployment -n "$ns" --ignore-not-found=true
-oc delete svc deployment -n "$ns" --ignore-not-found=true
-oc wait --for=delete deploy/deployment --timeout=60s -n "$ns"
-oc wait --for=delete svc/deployment --timeout=60s -n "$ns"
-
-##############################################################################################
-header "Dataplane probe: activator"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_DATAPLANE_PROBE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-activator.yaml"
-run_job dataplane-probe-activator "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-activator.yaml" "${KNATIVE_SERVING_DATAPLANE_PROBE%/*}"
-
-# additional clean up
-oc delete ksvc activator -n "$ns" --ignore-not-found=true
-oc wait --for=delete ksvc/activator --timeout=60s -n "$ns"
-
-###############################################################################################
-header "Dataplane probe: queue proxy"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_DATAPLANE_PROBE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-queue.yaml"
-run_job dataplane-probe-queue "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-queue.yaml" "${KNATIVE_SERVING_DATAPLANE_PROBE%/*}"
-
-# additional clean up
-oc delete ksvc queue-proxy -n "$ns" --ignore-not-found=true
-oc wait --for=delete ksvc/queue-proxy --timeout=60s -n "$ns"
-
-###############################################################################################
-header "Reconciliation delay test"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_RECONCILIATION_DELAY}," "${SERVING}/test/performance/benchmarks/reconciliation-delay/reconciliation-delay.yaml"
-run_job reconciliation-delay "${SERVING}/test/performance/benchmarks/reconciliation-delay/reconciliation-delay.yaml" "${KNATIVE_SERVING_RECONCILIATION_DELAY%/*}"
-###############################################################################################
-header "Scale from Zero test"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-1.yaml"
-run_job scale-from-zero-1 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-1.yaml"  "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
-oc delete ksvc -n "$ns" --all --wait --now
-sleep 5 # wait a bit for the cleanup to be done
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-5.yaml"
-run_job scale-from-zero-5 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-5.yaml" "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
-oc delete ksvc -n "$ns" --all --wait --now
-sleep 25 # wait a bit for the cleanup to be done
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-25.yaml"
-run_job scale-from-zero-25 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-25.yaml" "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
-oc delete ksvc -n "$ns" --all --wait --now
-sleep 50 # wait a bit for the cleanup to be done
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-100.yaml"
-run_job scale-from-zero-100 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-100.yaml" "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
-oc delete ksvc -n "$ns" --all --wait --now
-sleep 100 # wait a bit for the cleanup to be done
-
-###############################################################################################
-header "Load test: Setup"
-
-pushd "$SERVING"
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_TEST_AUTOSCALE}," "${SERVING}/test/performance/benchmarks/load-test/load-test-setup.yaml"
-oc apply -f "${SERVING}/test/performance/benchmarks/load-test/load-test-setup.yaml"
-popd
-oc wait --timeout=60s --for=condition=ready ksvc -n "$ns" --all
-
+#header "Real traffic test"
+#toggle_feature kubernetes.podspec-init-containers Enabled
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_REAL_TRAFFIC_TEST}," "${SERVING}/test/performance/benchmarks/real-traffic-test/real-traffic-test.yaml"
+#run_job real-traffic-test "${SERVING}/test/performance/benchmarks/real-traffic-test/real-traffic-test.yaml" "${KNATIVE_SERVING_REAL_TRAFFIC_TEST%/*}"
+#sleep 100 # wait a bit for the cleanup to be done
+#kubectl delete ksvc -n "$ns" --all --wait --now
+#toggle_feature kubernetes.podspec-init-containers Disabled
+#
 ################################################################################################
-header "Load test: zero"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_LOAD_TEST}," "${SERVING}/test/performance/benchmarks/load-test/load-test-0-direct.yaml"
-run_job load-test-zero "${SERVING}/test/performance/benchmarks/load-test/load-test-0-direct.yaml" "${KNATIVE_SERVING_LOAD_TEST%/*}"
-
-# additional clean up
-oc delete ksvc load-test-zero -n "$ns"  --ignore-not-found=true
-oc wait --for=delete ksvc/load-test-zero --timeout=60s -n "$ns"
-
-##################################################################################################
-header "Load test: always direct"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_LOAD_TEST}," "${SERVING}/test/performance/benchmarks/load-test/load-test-always-direct.yaml"
-run_job load-test-always "${SERVING}/test/performance/benchmarks/load-test/load-test-always-direct.yaml" "${KNATIVE_SERVING_LOAD_TEST%/*}"
-
-# additional clean up
-oc delete ksvc load-test-always -n "$ns"  --ignore-not-found=true
-oc wait --for=delete ksvc/load-test-always --timeout=60s -n "$ns"
-
+#header "Dataplane probe: Setup"
+#
+#pushd "$SERVING"
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_TEST_AUTOSCALE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-setup.yaml"
+#oc apply -f "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-setup.yaml"
+#popd
+#oc wait --timeout=60s --for=condition=ready ksvc -n "$ns" --all
+#oc wait --timeout=60s --for=condition=available deploy -n "$ns" deployment
+#
+###############################################################################################
+#header "Dataplane probe: deployment"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_DATAPLANE_PROBE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-deployment.yaml"
+#run_job dataplane-probe-deployment "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-deployment.yaml" "${KNATIVE_SERVING_DATAPLANE_PROBE%/*}"
+#
+## additional clean up
+#oc delete deploy deployment -n "$ns" --ignore-not-found=true
+#oc delete svc deployment -n "$ns" --ignore-not-found=true
+#oc wait --for=delete deploy/deployment --timeout=60s -n "$ns"
+#oc wait --for=delete svc/deployment --timeout=60s -n "$ns"
+#
+###############################################################################################
+#header "Dataplane probe: activator"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_DATAPLANE_PROBE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-activator.yaml"
+#run_job dataplane-probe-activator "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-activator.yaml" "${KNATIVE_SERVING_DATAPLANE_PROBE%/*}"
+#
+## additional clean up
+#oc delete ksvc activator -n "$ns" --ignore-not-found=true
+#oc wait --for=delete ksvc/activator --timeout=60s -n "$ns"
+#
+################################################################################################
+#header "Dataplane probe: queue proxy"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_DATAPLANE_PROBE}," "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-queue.yaml"
+#run_job dataplane-probe-queue "${SERVING}/test/performance/benchmarks/dataplane-probe/dataplane-probe-queue.yaml" "${KNATIVE_SERVING_DATAPLANE_PROBE%/*}"
+#
+## additional clean up
+#oc delete ksvc queue-proxy -n "$ns" --ignore-not-found=true
+#oc wait --for=delete ksvc/queue-proxy --timeout=60s -n "$ns"
+#
+################################################################################################
+#header "Reconciliation delay test"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_RECONCILIATION_DELAY}," "${SERVING}/test/performance/benchmarks/reconciliation-delay/reconciliation-delay.yaml"
+#run_job reconciliation-delay "${SERVING}/test/performance/benchmarks/reconciliation-delay/reconciliation-delay.yaml" "${KNATIVE_SERVING_RECONCILIATION_DELAY%/*}"
+################################################################################################
+#header "Scale from Zero test"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-1.yaml"
+#run_job scale-from-zero-1 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-1.yaml"  "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
+#oc delete ksvc -n "$ns" --all --wait --now
+#sleep 5 # wait a bit for the cleanup to be done
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-5.yaml"
+#run_job scale-from-zero-5 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-5.yaml" "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
+#oc delete ksvc -n "$ns" --all --wait --now
+#sleep 25 # wait a bit for the cleanup to be done
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-25.yaml"
+#run_job scale-from-zero-25 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-25.yaml" "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
+#oc delete ksvc -n "$ns" --all --wait --now
+#sleep 50 # wait a bit for the cleanup to be done
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_SCALE_FROM_ZERO}," "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-100.yaml"
+#run_job scale-from-zero-100 "${SERVING}/test/performance/benchmarks/scale-from-zero/scale-from-zero-100.yaml" "${KNATIVE_SERVING_SCALE_FROM_ZERO%/*}"
+#oc delete ksvc -n "$ns" --all --wait --now
+#sleep 100 # wait a bit for the cleanup to be done
+#
+################################################################################################
+#header "Load test: Setup"
+#
+#pushd "$SERVING"
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_TEST_AUTOSCALE}," "${SERVING}/test/performance/benchmarks/load-test/load-test-setup.yaml"
+#oc apply -f "${SERVING}/test/performance/benchmarks/load-test/load-test-setup.yaml"
+#popd
+#oc wait --timeout=60s --for=condition=ready ksvc -n "$ns" --all
+#
 #################################################################################################
-header "Load test: 200 direct"
-
-sed -i "s,image: .*,image: ${KNATIVE_SERVING_LOAD_TEST}," "${SERVING}/test/performance/benchmarks/load-test/load-test-200-direct.yaml"
-run_job load-test-200 "${SERVING}/test/performance/benchmarks/load-test/load-test-200-direct.yaml" "${KNATIVE_SERVING_LOAD_TEST%/*}"
-
-# additional clean up
-oc delete ksvc load-test-200 -n "$ns"  --ignore-not-found=true
-oc wait --for=delete ksvc/load-test-200 --timeout=60s -n "$ns"
+#header "Load test: zero"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_LOAD_TEST}," "${SERVING}/test/performance/benchmarks/load-test/load-test-0-direct.yaml"
+#run_job load-test-zero "${SERVING}/test/performance/benchmarks/load-test/load-test-0-direct.yaml" "${KNATIVE_SERVING_LOAD_TEST%/*}"
+#
+## additional clean up
+#oc delete ksvc load-test-zero -n "$ns"  --ignore-not-found=true
+#oc wait --for=delete ksvc/load-test-zero --timeout=60s -n "$ns"
+#
+###################################################################################################
+#header "Load test: always direct"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_LOAD_TEST}," "${SERVING}/test/performance/benchmarks/load-test/load-test-always-direct.yaml"
+#run_job load-test-always "${SERVING}/test/performance/benchmarks/load-test/load-test-always-direct.yaml" "${KNATIVE_SERVING_LOAD_TEST%/*}"
+#
+## additional clean up
+#oc delete ksvc load-test-always -n "$ns"  --ignore-not-found=true
+#oc wait --for=delete ksvc/load-test-always --timeout=60s -n "$ns"
+#
+##################################################################################################
+#header "Load test: 200 direct"
+#
+#sed -i "s,image: .*,image: ${KNATIVE_SERVING_LOAD_TEST}," "${SERVING}/test/performance/benchmarks/load-test/load-test-200-direct.yaml"
+#run_job load-test-200 "${SERVING}/test/performance/benchmarks/load-test/load-test-200-direct.yaml" "${KNATIVE_SERVING_LOAD_TEST%/*}"
+#
+## additional clean up
+#oc delete ksvc load-test-200 -n "$ns"  --ignore-not-found=true
+#oc wait --for=delete ksvc/load-test-200 --timeout=60s -n "$ns"
 
 ###############################################################################################
 header "Rollout probe: activator direct"
