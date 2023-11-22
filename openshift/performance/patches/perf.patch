@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 9e3172f82..4da396560 100644
+index 21872e521..45b7b7e22 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -6,6 +6,7 @@ CORE_IMAGES=./cmd/activator ./cmd/autoscaler ./cmd/autoscaler-hpa ./cmd/controll
@@ -10,7 +10,7 @@ index 9e3172f82..4da396560 100644
  BRANCH=
  TEST=
  IMAGE=
-@@ -26,10 +27,20 @@ test-install:
+@@ -26,6 +27,12 @@ test-install:
  	done
  .PHONY: test-install
 
@@ -23,15 +23,7 @@ index 9e3172f82..4da396560 100644
  test-e2e:
  	./openshift/e2e-tests.sh
  .PHONY: test-e2e
-
-+perf-tests:
-+	./openshift/perf-tests.sh
-+.PHONY: perf-tests
-+
- test-e2e-tls:
- 	ENABLE_INTERNAL_TLS="true" ./openshift/e2e-tests.sh
- .PHONY: test-e2e-tls
-@@ -60,8 +71,9 @@ test-e2e-local:
+@@ -68,8 +75,9 @@ test-e2e-local:
 
  # Generate Dockerfiles for core and test images used by ci-operator. The files need to be committed manually.
  generate-dockerfiles:
