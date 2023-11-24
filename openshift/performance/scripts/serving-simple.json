@@ -3,13 +3,13 @@
     "workloads": [
       {
         "name": "activator",
-        "replicas": 4,
+        "replicas": 2,
         "resources": [
           {
             "container": "activator",
             "requests": {
-              "cpu": "500m",
-              "memory": "1000Mi"
+              "cpu": "3000m",
+              "memory": "5000Mi"
             },
             "limits": {
               "cpu": "5000m",
@@ -70,7 +70,20 @@
       },
       {
         "name": "3scale-kourier-gateway",
-        "replicas": 10
+        "replicas": 2,
+        "resources": [
+          {
+            "container": "kourier-gateway",
+            "requests": {
+              "cpu": "1000m",
+              "memory": "1500Mi"
+            },
+            "limits": {
+              "cpu": "5000m",
+              "memory": "5000Mi"
+            }
+          }
+        ]
       }
     ]
   }
