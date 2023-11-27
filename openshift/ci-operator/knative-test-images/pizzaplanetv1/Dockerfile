@@ -1,5 +1,5 @@
 # Do not edit! This file was generated via Makefile
-FROM registry.ci.openshift.org/openshift/release:golang-1.21as builder
+FROM registry.ci.openshift.org/openshift/release:golang-1.21 as builder
 
 COPY . .
 RUN make install test-install
