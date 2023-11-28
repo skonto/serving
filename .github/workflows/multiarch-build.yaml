@@ -8,3 +8,5 @@ jobs:
   multiarch-build:
     uses: openshift-knative/hack/.github/workflows/multiarch-build.yaml@main
     secrets: inherit
+    with:
+      goversion: '1.21.x'
