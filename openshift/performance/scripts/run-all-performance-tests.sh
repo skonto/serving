@@ -61,16 +61,16 @@ else
   for name in $(oc get machineset -n openshift-machine-api -o name); do oc scale "$name" -n openshift-machine-api --replicas=4; done
   oc wait --for=jsonpath="{.status.availableReplicas}=4" machineset --all -n openshift-machine-api --timeout=-1s
 
-  oc patch knativeserving knative-serving \
-    -n "${SYSTEM_NAMESPACE}" \
-    --type merge --patch-file "$(dirname "$0")/serving-simple.json"
+#  oc patch knativeserving knative-serving \
+#    -n "${SYSTEM_NAMESPACE}" \
+#    --type merge --patch-file "$(dirname "$0")/serving-simple.json"
 
   # remove pods and start fresh
-  oc delete po --all -n knative-serving --force --grace-period=0
-  oc delete po --all -n knative-serving-ingress --force --grace-period=0
+#  oc delete po --all -n knative-serving --force --grace-period=0
+#  oc delete po --all -n knative-serving-ingress --force --grace-period=0
 
   # make sure we are in good shape after patching
-  oc wait --for=condition=Ready knativeserving.operator.knative.dev knative-serving -n "${SYSTEM_NAMESPACE}" --timeout=900s
+#  oc wait --for=condition=Ready knativeserving.operator.knative.dev knative-serving -n "${SYSTEM_NAMESPACE}" --timeout=900s
 
   oc get nodes |  wc -l
 fi

@@ -204,6 +204,8 @@ kubectl wait --for=delete ksvc/load-test-200 --timeout=60s -n "$ns"
 ###############################################################################################
 header "Rollout probe: activator direct"
 
+toggle_feature scale-to-zero-grace-period 10s config-autoscaler
+
 ko apply --sbom=none -Bf "${REPO_ROOT_DIR}/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct.yaml"
 kubectl wait --timeout=800s --for=condition=ready ksvc -n "$ns" --all
 
