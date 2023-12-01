@@ -21,8 +21,8 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "100"
-        autoscaling.knative.dev/maxScale: "150"
+        autoscaling.knative.dev/minScale: "50"
+        autoscaling.knative.dev/maxScale: "100"
         # Only hook the activator in when scaled to zero.
         autoscaling.knative.dev/targetBurstCapacity: "0"
         serving.knative.dev/rollout-duration: "240s"
@@ -36,5 +36,5 @@ spec:
           limits:
             cpu: 250m
             memory: 250Mi
-      containerConcurrency: 10
+      containerConcurrency: 20
 ---
