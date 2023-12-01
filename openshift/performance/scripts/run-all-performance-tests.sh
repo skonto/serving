@@ -58,8 +58,8 @@ if [[ "${ISOLATE_SERVERLESS:-false}" == "true" ]]; then
 
 else
   header "Scaling cluster"
-  for name in $(oc get machineset -n openshift-machine-api -o name); do oc scale "$name" -n openshift-machine-api --replicas=4; done
-  oc wait --for=jsonpath="{.status.availableReplicas}=4" machineset --all -n openshift-machine-api --timeout=-1s
+  for name in $(oc get machineset -n openshift-machine-api -o name); do oc scale "$name" -n openshift-machine-api --replicas=5; done
+  oc wait --for=jsonpath="{.status.availableReplicas}=5" machineset --all -n openshift-machine-api --timeout=-1s
   oc get nodes |  wc -l
 fi
 

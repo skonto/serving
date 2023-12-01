@@ -25,6 +25,7 @@ spec:
         autoscaling.knative.dev/maxScale: "150"
         # Only hook the activator in when scaled to zero.
         autoscaling.knative.dev/targetBurstCapacity: "0"
+        serving.knative.dev/rollout-duration: "240s"
     spec:
       containers:
       - image: ko://knative.dev/serving/test/test_images/autoscale
