@@ -142,6 +142,8 @@ function install_serverless(){
   export GOPATH=/tmp/go
   export ON_CLUSTER_BUILDS=true
   export DOCKER_REPO_OVERRIDE=image-registry.openshift-image-registry.svc:5000/openshift-marketplace
+  #TODO: enable back when we have the feature ready again downstream
+  sed -i 's/internal-encryption: "true"/internal-encryption: "false"/g' ./test/v1beta1/resources/operator.knative.dev_v1beta1_knativeserving_cr.yaml
   OPENSHIFT_CI="true" make generated-files images install-serving || return $?
 
   # Create a secret for https test.
