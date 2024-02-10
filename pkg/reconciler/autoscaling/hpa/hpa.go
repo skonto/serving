@@ -19,7 +19,10 @@ package hpa
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/kedacore/keda/v2/pkg/generated/clientset/versioned/typed/keda/v1alpha1"
+	v2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,6 +38,7 @@ import (
 	areconciler "knative.dev/serving/pkg/reconciler/autoscaling"
 	"knative.dev/serving/pkg/reconciler/autoscaling/config"
 	"knative.dev/serving/pkg/reconciler/autoscaling/hpa/resources"
+	"knative.dev/serving/pkg/reconciler/autoscaling/hpa/resources/keda"
 )
 
 // Reconciler implements the control loop for the HPA resources.
@@ -42,6 +46,7 @@ type Reconciler struct {
 	*areconciler.Base
 
 	kubeClient kubernetes.Interface
+	keda       v1alpha1.KedaV1alpha1Interface
 	hpaLister  autoscalingv2listers.HorizontalPodAutoscalerLister
 }
 
@@ -56,26 +61,57 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, pa *autoscalingv1alpha1.
 	logger := logging.FromContext(ctx)
 	logger.Debug("PA exists")
 
-	// HPA-class PA delegates autoscaling to the Kubernetes Horizontal Pod Autoscaler.
-	desiredHpa := resources.MakeHPA(pa, config.FromContext(ctx).Autoscaler)
-	hpa, err := c.hpaLister.HorizontalPodAutoscalers(pa.Namespace).Get(desiredHpa.Name)
-	if errors.IsNotFound(err) {
-		logger.Infof("Creating HPA %q", desiredHpa.Name)
-		if hpa, err = c.kubeClient.AutoscalingV2().HorizontalPodAutoscalers(pa.Namespace).Create(ctx, desiredHpa, metav1.CreateOptions{}); err != nil {
-			pa.Status.MarkResourceFailedCreation("HorizontalPodAutoscaler", desiredHpa.Name)
-			return fmt.Errorf("failed to create HPA: %w", err)
+	var hpa *v2.HorizontalPodAutoscaler
+
+	if os.Getenv("USE_KEDA") != "" {
+		dScaledObject := resources.MakeScaledObject(pa, config.FromContext(ctx).Autoscaler)
+		scaledObj, err := keda.Get(ctx).Lister().ScaledObjects(pa.Namespace).Get(dScaledObject.Name)
+		if errors.IsNotFound(err) {
+			logger.Infof("Creating Scaled Object %q", dScaledObject.Name)
+			if scaledObj, err = c.keda.ScaledObjects(pa.Namespace).Create(ctx, dScaledObject, metav1.CreateOptions{}); err != nil {
+				pa.Status.MarkResourceFailedCreation("ScaledObject", dScaledObject.Name)
+				return fmt.Errorf("failed to create ScaledObject: %w", err)
+			}
+		} else if err != nil {
+			return fmt.Errorf("failed to get ScaledObject: %w", err)
+		} else if !metav1.IsControlledBy(scaledObj, pa) {
+			// Surface an error in the PodAutoscaler's status, and return an error.
+			pa.Status.MarkResourceNotOwned("ScaledObject", dScaledObject.Name)
+			return fmt.Errorf("PodAutoscaler: %q does not own ScaledObject: %q", pa.Name, dScaledObject.Name)
 		}
-	} else if err != nil {
-		return fmt.Errorf("failed to get HPA: %w", err)
-	} else if !metav1.IsControlledBy(hpa, pa) {
-		// Surface an error in the PodAutoscaler's status, and return an error.
-		pa.Status.MarkResourceNotOwned("HorizontalPodAutoscaler", desiredHpa.Name)
-		return fmt.Errorf("PodAutoscaler: %q does not own HPA: %q", pa.Name, desiredHpa.Name)
-	}
-	if !equality.Semantic.DeepEqual(desiredHpa.Spec, hpa.Spec) {
-		logger.Infof("Updating HPA %q", desiredHpa.Name)
-		if _, err := c.kubeClient.AutoscalingV2().HorizontalPodAutoscalers(pa.Namespace).Update(ctx, desiredHpa, metav1.UpdateOptions{}); err != nil {
-			return fmt.Errorf("failed to update HPA: %w", err)
+		if !equality.Semantic.DeepEqual(dScaledObject.Spec, scaledObj.Spec) {
+			logger.Infof("Updating ScaledObject %q", dScaledObject.Name)
+			if _, err := c.keda.ScaledObjects(pa.Namespace).Update(ctx, dScaledObject, metav1.UpdateOptions{}); err != nil {
+				return fmt.Errorf("failed to update HPA: %w", err)
+			}
+		}
+		hpa, err = c.hpaLister.HorizontalPodAutoscalers(pa.Namespace).Get(pa.Name)
+		if errors.IsNotFound(err) {
+			return fmt.Errorf("failed to find HPA for ScaledObject: %w", err)
+		}
+	} else {
+		var err error
+		desiredHpa := resources.MakeHPA(pa, config.FromContext(ctx).Autoscaler)
+		hpa, err = c.hpaLister.HorizontalPodAutoscalers(pa.Namespace).Get(desiredHpa.Name)
+
+		if errors.IsNotFound(err) {
+			logger.Infof("Creating HPA %q", desiredHpa.Name)
+			if hpa, err = c.kubeClient.AutoscalingV2().HorizontalPodAutoscalers(pa.Namespace).Create(ctx, desiredHpa, metav1.CreateOptions{}); err != nil {
+				pa.Status.MarkResourceFailedCreation("HorizontalPodAutoscaler", desiredHpa.Name)
+				return fmt.Errorf("failed to create HPA: %w", err)
+			}
+		} else if err != nil {
+			return fmt.Errorf("failed to get HPA: %w", err)
+		} else if !metav1.IsControlledBy(hpa, pa) {
+			// Surface an error in the PodAutoscaler's status, and return an error.
+			pa.Status.MarkResourceNotOwned("HorizontalPodAutoscaler", desiredHpa.Name)
+			return fmt.Errorf("PodAutoscaler: %q does not own HPA: %q", pa.Name, desiredHpa.Name)
+		}
+		if !equality.Semantic.DeepEqual(desiredHpa.Spec, hpa.Spec) {
+			logger.Infof("Updating HPA %q", desiredHpa.Name)
+			if _, err := c.kubeClient.AutoscalingV2().HorizontalPodAutoscalers(pa.Namespace).Update(ctx, desiredHpa, metav1.UpdateOptions{}); err != nil {
+				return fmt.Errorf("failed to update HPA: %w", err)
+			}
 		}
 	}
 

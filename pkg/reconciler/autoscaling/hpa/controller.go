@@ -23,6 +23,7 @@ import (
 	sksinformer "knative.dev/networking/pkg/client/injection/informers/networking/v1alpha1/serverlessservice"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	hpainformer "knative.dev/pkg/client/injection/kube/informers/autoscaling/v2/horizontalpodautoscaler"
+	"knative.dev/pkg/injection"
 	"knative.dev/pkg/logging"
 	servingclient "knative.dev/serving/pkg/client/injection/client"
 	metricinformer "knative.dev/serving/pkg/client/injection/informers/autoscaling/v1alpha1/metric"
@@ -30,6 +31,7 @@ import (
 	pareconciler "knative.dev/serving/pkg/client/injection/reconciler/autoscaling/v1alpha1/podautoscaler"
 	"knative.dev/serving/pkg/deployment"
 
+	"github.com/kedacore/keda/v2/pkg/generated/clientset/versioned"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -54,6 +56,7 @@ func NewController(
 
 	onlyHPAClass := pkgreconciler.AnnotationFilterFunc(autoscaling.ClassAnnotationKey, autoscaling.HPA, false)
 
+	k, _ := versioned.NewForConfig(injection.GetConfig(ctx))
 	c := &Reconciler{
 		Base: &areconciler.Base{
 			Client:           servingclient.Get(ctx),
@@ -63,6 +66,7 @@ func NewController(
 		},
 
 		kubeClient: kubeclient.Get(ctx),
+		keda:       k.KedaV1alpha1(),
 		hpaLister:  hpaInformer.Lister(),
 	}
 	impl := pareconciler.NewImpl(ctx, c, autoscaling.HPA, func(impl *controller.Impl) controller.Options {
