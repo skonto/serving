@@ -1,4 +1,4 @@
-package keda
+package factory
 
 import (
 	context "context"

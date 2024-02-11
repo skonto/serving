@@ -19,6 +19,8 @@ package hpa
 import (
 	"context"
 
+	keda "knative.dev/serving/pkg/reconciler/autoscaling/hpa/resources/keda"
+
 	networkingclient "knative.dev/networking/pkg/client/injection/client"
 	sksinformer "knative.dev/networking/pkg/client/injection/informers/networking/v1alpha1/serverlessservice"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -53,6 +55,7 @@ func NewController(
 	sksInformer := sksinformer.Get(ctx)
 	hpaInformer := hpainformer.Get(ctx)
 	metricInformer := metricinformer.Get(ctx)
+	kedaInformer := keda.Get(ctx)
 
 	onlyHPAClass := pkgreconciler.AnnotationFilterFunc(autoscaling.ClassAnnotationKey, autoscaling.HPA, false)
 
@@ -66,7 +69,8 @@ func NewController(
 		},
 
 		kubeClient: kubeclient.Get(ctx),
-		keda:       k.KedaV1alpha1(),
+		kedaLister: kedaInformer.Lister(),
+		kedaClient: k.KedaV1alpha1(),
 		hpaLister:  hpaInformer.Lister(),
 	}
 	impl := pareconciler.NewImpl(ctx, c, autoscaling.HPA, func(impl *controller.Impl) controller.Options {

@@ -2,6 +2,8 @@ package resources
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -11,7 +13,6 @@ import (
 	"knative.dev/serving/pkg/apis/autoscaling"
 	autoscalingv1alpha1 "knative.dev/serving/pkg/apis/autoscaling/v1alpha1"
 	"knative.dev/serving/pkg/autoscaler/config/autoscalerconfig"
-	"math"
 )
 
 // MakeScaledObject creates an ScaledObject KEDA resource from a PA resource.
@@ -68,12 +69,22 @@ func MakeScaledObject(pa *autoscalingv1alpha1.PodAutoscaler, config *autoscalerc
 		default:
 			if target, ok := pa.Target(); ok {
 				targetQuantity := resource.NewQuantity(int64(target), resource.DecimalSI)
-				query := fmt.Sprintf("sum(avg_over_time(%s{}[1m]))", pa.Metric())
+				var query, address string
+				if v, ok := pa.Annotations["autoscaling.knative.dev/query"]; ok {
+					query = v
+				} else {
+					query = fmt.Sprintf("sum(rate(%s{}[1m]))", pa.Metric())
+				}
+				if v, ok := pa.Annotations["autoscaling.knative.dev/prometheus-address"]; ok {
+					address = v
+				} else {
+					address = "http://prometheus-operated.default.svc:9090"
+				}
 				sO.Spec.Triggers = []v1alpha1.ScaleTriggers{
 					{
 						Type: "prometheus",
 						Metadata: map[string]string{
-							"serverAddress": "http://prometheus-operated.default.svc:9090",
+							"serverAddress": address,
 							"query":         query,
 							"threshold":     targetQuantity.String(),
 						},
