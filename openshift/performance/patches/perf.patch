@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 21872e521..45b7b7e22 100644
+index ccd342372..7963cf412 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -6,6 +6,7 @@ CORE_IMAGES=./cmd/activator ./cmd/autoscaler ./cmd/autoscaler-hpa ./cmd/controll
@@ -36,7 +36,7 @@ index 21872e521..45b7b7e22 100644
 
  # Generate an aggregated knative yaml file with replaced image references
 diff --git a/openshift/ci-operator/Dockerfile.in b/openshift/ci-operator/Dockerfile.in
-index 32b94bfb1..ce192d43d 100644
+index 1c31865cc..7bd47161b 100644
 --- a/openshift/ci-operator/Dockerfile.in
 +++ b/openshift/ci-operator/Dockerfile.in
 @@ -2,7 +2,7 @@
@@ -46,10 +46,10 @@ index 32b94bfb1..ce192d43d 100644
 -RUN make install test-install
 +RUN make install test-install perf-install
 
- FROM openshift/origin-base
+ FROM registry.access.redhat.com/ubi8/ubi-minimal
  USER 65532
 diff --git a/openshift/ci-operator/Dockerfile_with_kodata.in b/openshift/ci-operator/Dockerfile_with_kodata.in
-index 00de72095..0422ce541 100644
+index 9d84e5ecc..572d91c25 100644
 --- a/openshift/ci-operator/Dockerfile_with_kodata.in
 +++ b/openshift/ci-operator/Dockerfile_with_kodata.in
 @@ -2,7 +2,7 @@
@@ -59,7 +59,7 @@ index 00de72095..0422ce541 100644
 -RUN make install test-install
 +RUN make install test-install perf-install
 
- FROM openshift/origin-base
+ FROM registry.access.redhat.com/ubi8/ubi-minimal
  USER 65532
 diff --git a/test/performance/README.md b/test/performance/README.md
 index a4906039a..f17f7cffc 100644
@@ -264,7 +264,7 @@ index 63737a5df..6fc01ccd6 100644
              seccompProfile:
                type: RuntimeDefault
 diff --git a/test/performance/benchmarks/dataplane-probe/main.go b/test/performance/benchmarks/dataplane-probe/main.go
-index f17996dc9..09e9fcadf 100644
+index 58693daa3..ff0a8b37b 100644
 --- a/test/performance/benchmarks/dataplane-probe/main.go
 +++ b/test/performance/benchmarks/dataplane-probe/main.go
 @@ -118,11 +118,11 @@ func main() {
@@ -299,7 +299,7 @@ index f17996dc9..09e9fcadf 100644
 +	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
  	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
- 	if err := checkSLA(metricResults, t.slaMin, t.slaMax); err != nil {
+ 	if err := checkSLA(metricResults, t.slaMin, t.slaMax, rate, *duration); err != nil {
  		// make sure to still write the stats
 -		influxReporter.FlushAndShutdown()
 +		reporter.FlushAndShutdown()
@@ -442,7 +442,7 @@ index 64c1e99a5..2c7b6295d 100644
              valueFrom:
                secretKeyRef:
 diff --git a/test/performance/benchmarks/load-test/main.go b/test/performance/benchmarks/load-test/main.go
-index 822eff669..f5b18ea28 100644
+index 4e55b942d..336bb88da 100644
 --- a/test/performance/benchmarks/load-test/main.go
 +++ b/test/performance/benchmarks/load-test/main.go
 @@ -62,11 +62,11 @@ func main() {
@@ -472,7 +472,7 @@ index 822eff669..f5b18ea28 100644
 +	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
  	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
- 	if err := checkSLA(metricResults); err != nil {
+ 	if err := checkSLA(metricResults, pacers, durations); err != nil {
  		// make sure to still write the stats
 -		influxReporter.FlushAndShutdown()
 +		reporter.FlushAndShutdown()
@@ -510,7 +510,7 @@ index 822eff669..f5b18ea28 100644
  	}
  }
 diff --git a/test/performance/benchmarks/real-traffic-test/main.go b/test/performance/benchmarks/real-traffic-test/main.go
-index bd034c41d..db18a12f6 100644
+index bad45b394..718831c64 100644
 --- a/test/performance/benchmarks/real-traffic-test/main.go
 +++ b/test/performance/benchmarks/real-traffic-test/main.go
 @@ -115,11 +115,11 @@ func main() {
@@ -536,7 +536,7 @@ index bd034c41d..db18a12f6 100644
 +	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
  	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
- 	if err := checkSLA(metricResults); err != nil {
+ 	if err := checkSLA(metricResults, rate); err != nil {
  		cleanup()
 -		influxReporter.FlushAndShutdown()
 +		reporter.FlushAndShutdown()
@@ -599,64 +599,10 @@ index 5154b38a3..f4f47ec5a 100644
              valueFrom:
                secretKeyRef:
 diff --git a/test/performance/benchmarks/reconciliation-delay/main.go b/test/performance/benchmarks/reconciliation-delay/main.go
-index 1c7f600b4..4c7dcdd91 100644
+index 1c7f600b4..dd100a33e 100644
 --- a/test/performance/benchmarks/reconciliation-delay/main.go
 +++ b/test/performance/benchmarks/reconciliation-delay/main.go
-@@ -108,28 +108,28 @@ func main() {
- 		fatalf("Unable to watch services: %v", err)
- 	}
- 	defer serviceWI.Stop()
--	serviceSeen := sets.Set[string]{}
-+	serviceSeen := make(sets.String)
-
- 	configurationWI, err := sc.ServingV1().Configurations(namespace).Watch(ctx, lo)
- 	if err != nil {
- 		fatalf("Unable to watch configurations: %v", err)
- 	}
- 	defer configurationWI.Stop()
--	configurationSeen := sets.Set[string]{}
-+	configurationSeen := make(sets.String)
-
- 	routeWI, err := sc.ServingV1().Routes(namespace).Watch(ctx, lo)
- 	if err != nil {
- 		fatalf("Unable to watch routes: %v", err)
- 	}
- 	defer routeWI.Stop()
--	routeSeen := sets.Set[string]{}
-+	routeSeen := make(sets.String)
-
- 	revisionWI, err := sc.ServingV1().Revisions(namespace).Watch(ctx, lo)
- 	if err != nil {
- 		fatalf("Unable to watch revisions: %v", err)
- 	}
- 	defer revisionWI.Stop()
--	revisionSeen := sets.Set[string]{}
-+	revisionSeen := make(sets.String)
-
- 	nc := networkingclient.Get(ctx)
- 	ingressWI, err := nc.NetworkingV1alpha1().Ingresses(namespace).Watch(ctx, lo)
-@@ -137,29 +137,29 @@ func main() {
- 		fatalf("Unable to watch ingresss: %v", err)
- 	}
- 	defer ingressWI.Stop()
--	ingressSeen := sets.Set[string]{}
-+	ingressSeen := make(sets.String)
-
- 	sksWI, err := nc.NetworkingV1alpha1().ServerlessServices(namespace).Watch(ctx, lo)
- 	if err != nil {
- 		fatalf("Unable to watch skss: %v", err)
- 	}
- 	defer sksWI.Stop()
--	sksSeen := sets.Set[string]{}
-+	sksSeen := make(sets.String)
-
- 	paWI, err := sc.AutoscalingV1alpha1().PodAutoscalers(namespace).Watch(ctx, lo)
- 	if err != nil {
- 		fatalf("Unable to watch pas: %v", err)
- 	}
- 	defer paWI.Stop()
--	paSeen := sets.Set[string]{}
-+	paSeen := make(sets.String)
+@@ -155,11 +155,11 @@ func main() {
 
  	tick := time.NewTicker(*frequency)
  	metricResults := func() *vegeta.Metrics {
@@ -734,17 +680,15 @@ index 1c7f600b4..4c7dcdd91 100644
  			}
  		}
  	}()
-@@ -271,8 +271,8 @@ func getService() *v1.Service {
+@@ -271,7 +271,7 @@ func getService() *v1.Service {
  	return v1test.Service(rn, sos...)
  }
 
 -func handleEvent(influxReporter *performance.InfluxReporter, metricResults *vegeta.Metrics, svc kmeta.Accessor,
--	status duckv1.Status, seen sets.Set[string], metric string) {
 +func handleEvent(reporter *performance.DataPointReporter, metricResults *vegeta.Metrics, svc kmeta.Accessor,
-+	status duckv1.Status, seen sets.String, metric string) {
+ 	status duckv1.Status, seen sets.Set[string], metric string) {
  	if seen.Has(svc.GetName()) {
  		return
- 	}
 @@ -288,7 +288,7 @@ func handleEvent(influxReporter *performance.InfluxReporter, metricResults *vege
  	elapsed := ready.Sub(created)
 
@@ -806,10 +750,19 @@ index 3f5be345a..a78680542 100644
              valueFrom:
                secretKeyRef:
 diff --git a/test/performance/benchmarks/rollout-probe/main.go b/test/performance/benchmarks/rollout-probe/main.go
-index b374fe485..da6dbfba3 100644
+index 288125138..a8f8db703 100644
 --- a/test/performance/benchmarks/rollout-probe/main.go
 +++ b/test/performance/benchmarks/rollout-probe/main.go
-@@ -113,11 +113,11 @@ func main() {
+@@ -105,7 +105,7 @@ func main() {
+ 	}
+
+ 	// Send 1k QPS for the given duration with a 30s request timeout.
+-	rate := vegeta.Rate{Freq: 1000, Per: time.Second}
++	rate := vegeta.Rate{Freq: 3600, Per: time.Second}
+ 	targeter := vegeta.NewStaticTargeter(t.target)
+ 	attacker := vegeta.NewAttacker(vegeta.Timeout(30 * time.Second))
+
+@@ -114,11 +114,11 @@ func main() {
  	})
  	log.Print("Running rollout probe test with selector: ", selector)
 
@@ -824,7 +777,7 @@ index b374fe485..da6dbfba3 100644
 
  	// Setup background metric processes
  	deploymentStatus := performance.FetchDeploymentsStatus(ctx, namespace, selector, time.Second)
-@@ -174,12 +174,12 @@ LOOP:
+@@ -175,12 +175,12 @@ LOOP:
  			// If it is the first one -- report it.
  			if strings.Contains(ds.DeploymentName, firstRev) {
  				// Add a sample point for the deployment status.
@@ -841,7 +794,7 @@ index b374fe485..da6dbfba3 100644
  				// Ignore all other revisions' deployments if there are, since
  				// they are from previous test run iterations, and we don't care about
  				// their reported scale values (should be 0 & 100 depending on which
-@@ -207,12 +207,12 @@ LOOP:
+@@ -208,12 +208,12 @@ LOOP:
  	metricResults.Close()
 
  	// Report the results
@@ -849,7 +802,7 @@ index b374fe485..da6dbfba3 100644
 +	reporter.AddDataPointsForMetrics(metricResults, benchmarkName)
  	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
- 	if err := checkSLA(metricResults); err != nil {
+ 	if err := checkSLA(metricResults, rate); err != nil {
  		// make sure to still write the stats
 -		influxReporter.FlushAndShutdown()
 +		reporter.FlushAndShutdown()
@@ -991,11 +944,114 @@ index 59705f94a..60ef86ae1 100644
            - name: JOB_NAME
              valueFrom:
                secretKeyRef:
+diff --git a/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct-lin.yaml b/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct-lin.yaml
+index 6c14c9edf..ec637edc4 100644
+--- a/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct-lin.yaml
++++ b/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct-lin.yaml
+@@ -21,11 +21,10 @@ spec:
+   template:
+     metadata:
+       annotations:
+-        autoscaling.knative.dev/minScale: "50"
+-        autoscaling.knative.dev/maxScale: "100"
++        autoscaling.knative.dev/minScale: "100"
++        autoscaling.knative.dev/maxScale: "150"
+         # Always hook the activator in.
+         autoscaling.knative.dev/targetBurstCapacity: "-1"
+-        serving.knative.dev/rollout-duration: "240s"
+     spec:
+       containers:
+       - image: ko://knative.dev/serving/test/test_images/autoscale
+@@ -34,7 +33,7 @@ spec:
+             cpu: 20m
+             memory: 20Mi
+           limits:
+-            cpu: 300m
+-            memory: 300Mi
+-      containerConcurrency: 30
++            cpu: 50m
++            memory: 50Mi
++      containerConcurrency: 5
+ ---
+diff --git a/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct.yaml b/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct.yaml
+index c16214a55..5c4677fea 100644
+--- a/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct.yaml
++++ b/test/performance/benchmarks/rollout-probe/rollout-probe-setup-activator-direct.yaml
+@@ -21,12 +21,11 @@ spec:
+   template:
+     metadata:
+       annotations:
+-        autoscaling.knative.dev/minScale: "50"
+-        autoscaling.knative.dev/maxScale: "100"
++        autoscaling.knative.dev/minScale: "100"
++        autoscaling.knative.dev/maxScale: "150"
+         # Always hook the activator in.
+         autoscaling.knative.dev/targetBurstCapacity: "-1"
+         autoscaling.knative.dev/metricAggregationAlgorithm: "weightedExponential"
+-        serving.knative.dev/rollout-duration: "240s"
+     spec:
+       containers:
+       - image: ko://knative.dev/serving/test/test_images/autoscale
+@@ -35,7 +34,7 @@ spec:
+             cpu: 20m
+             memory: 20Mi
+           limits:
+-            cpu: 300m
+-            memory: 300Mi
+-      containerConcurrency: 30
++            cpu: 50m
++            memory: 50Mi
++      containerConcurrency: 5
+ ---
+diff --git a/test/performance/benchmarks/rollout-probe/rollout-probe-setup-queue-proxy-direct.yaml b/test/performance/benchmarks/rollout-probe/rollout-probe-setup-queue-proxy-direct.yaml
+index 21b033413..e87e041ef 100644
+--- a/test/performance/benchmarks/rollout-probe/rollout-probe-setup-queue-proxy-direct.yaml
++++ b/test/performance/benchmarks/rollout-probe/rollout-probe-setup-queue-proxy-direct.yaml
+@@ -33,7 +33,7 @@ spec:
+             cpu: 20m
+             memory: 20Mi
+           limits:
+-            cpu: 250m
+-            memory: 250Mi
+-      containerConcurrency: 10
++            cpu: 50m
++            memory: 50Mi
++      containerConcurrency: 5
+ ---
 diff --git a/test/performance/benchmarks/scale-from-zero/main.go b/test/performance/benchmarks/scale-from-zero/main.go
-index 64e9cafa3..5e58841f0 100644
+index 2c527c74b..7fab7f04c 100644
 --- a/test/performance/benchmarks/scale-from-zero/main.go
 +++ b/test/performance/benchmarks/scale-from-zero/main.go
-@@ -129,11 +129,11 @@ func main() {
+@@ -74,13 +74,13 @@ var (
+ 	}{
+ 		1: {
+ 			p95min:     0,
+-			p95max:     50 * time.Millisecond,
+-			latencyMax: 50 * time.Millisecond,
++			p95max:     15 * time.Millisecond,
++			latencyMax: 15 * time.Millisecond,
+ 		},
+ 		5: {
+ 			p95min:     0,
+-			p95max:     50 * time.Millisecond,
+-			latencyMax: 50 * time.Millisecond,
++			p95max:     15 * time.Millisecond,
++			latencyMax: 20 * time.Millisecond,
+ 		},
+ 		25: {
+ 			// Scaling 25 services in parallel will hit some API limits, which cause a step
+@@ -93,8 +93,8 @@ var (
+ 			// Scaling 100 services in parallel will hit some API limits, which cause a step
+ 			// in the deployment updated time which adds to the total time until a service is ready
+ 			p95min:     0,
+-			p95max:     25 * time.Second,
+-			latencyMax: 25 * time.Second,
++			p95max:     15 * time.Second,
++			latencyMax: 20 * time.Second,
+ 		},
+ 	}
+ )
+@@ -127,11 +127,11 @@ func main() {
  		log.Fatal("Failed to setup clients: ", err)
  	}
 
@@ -1010,7 +1066,7 @@ index 64e9cafa3..5e58841f0 100644
 
  	// We use vegeta.Metrics here as a metrics collector because it already contains logic to calculate percentiles
  	vegetaReporter := performance.NewVegetaReporter()
-@@ -157,18 +157,18 @@ func main() {
+@@ -155,18 +155,18 @@ func main() {
  		fatalf("Failed to wait for all services to scale to zero: %v", err)
  	}
 
@@ -1025,14 +1081,14 @@ index 64e9cafa3..5e58841f0 100644
  	_ = vegeta.NewTextReporter(metricResults).Report(os.Stdout)
 
  	sla := slas[*parallelCount]
- 	if err := checkSLA(metricResults, sla.p95min, sla.p95max, sla.latencyMax); err != nil {
+ 	if err := checkSLA(metricResults, sla.p95min, sla.p95max, sla.latencyMax, *parallelCount); err != nil {
  		// make sure to still write the stats
 -		influxReporter.FlushAndShutdown()
 +		reporter.FlushAndShutdown()
  		log.Fatalf(err.Error())
  	}
 
-@@ -252,7 +252,7 @@ func waitForScaleToZero(ctx context.Context, objs []*v1test.ResourceObjects) err
+@@ -250,7 +250,7 @@ func waitForScaleToZero(ctx context.Context, objs []*v1test.ResourceObjects) err
  	return g.Wait()
  }
 
@@ -1041,7 +1097,7 @@ index 64e9cafa3..5e58841f0 100644
  	count := len(objs)
  	var wg sync.WaitGroup
  	wg.Add(count)
-@@ -263,16 +263,16 @@ func parallelScaleFromZero(ctx context.Context, clients *test.Clients, objs []*v
+@@ -261,16 +261,16 @@ func parallelScaleFromZero(ctx context.Context, clients *test.Clients, objs []*v
  			serviceReadyDuration, deploymentUpdatedDuration, err := runScaleFromZero(ctx, clients, ndx, objs[ndx])
  			if err == nil {
  				vegetaReporter.AddResult(&vegeta.Result{Latency: serviceReadyDuration})
