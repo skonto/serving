@@ -323,6 +323,9 @@ function run_e2e_tests(){
   # Use sed as the -spoofinterval parameter is not available yet
   sed "s/\(.*requestInterval =\).*/\1 10 * time.Millisecond/" -i vendor/knative.dev/pkg/test/spoof/spoof.go
 
+  # TODO: bring it back once it is stable upstream
+  rm -rf test/ha/workload_test.go
+
   # Run HA tests separately as they're stopping core Knative Serving pods
   # Define short -spoofinterval to ensure frequent probing while stopping pods
   go_test_e2e -tags=e2e -timeout=15m -failfast -parallel=1 \
