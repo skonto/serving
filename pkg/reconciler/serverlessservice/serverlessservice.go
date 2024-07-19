@@ -287,13 +287,23 @@ func (r *reconciler) reconcilePublicEndpoints(ctx context.Context, sks *netv1alp
 	if foundServingEndpoints {
 		sks.Status.MarkEndpointsReady()
 	} else {
-		dlogger.Info("No ready endpoints backing revision")
-		sks.Status.MarkEndpointsNotReady("NoHealthyBackends")
+		if v, ok := sks.Annotations["autoscaling.knative.dev/class"]; ok && v == "hpa.autoscaling.knative.dev" {
+			// fake that we have endpoints, so that the HPA can scale on some ingress metric.
+			// without a ready service no networking is being setup
+			sks.Status.MarkEndpointsReady()
+		} else {
+			dlogger.Info("No ready endpoints backing revision")
+			sks.Status.MarkEndpointsNotReady("NoHealthyBackends")
+		}
 	}
 	// If we have no backends or if we're in the proxy mode, then
 	// activator backs this revision.
 	if !foundServingEndpoints || sks.Spec.Mode == netv1alpha1.SKSOperationModeProxy {
-		sks.Status.MarkActivatorEndpointsPopulated()
+		if v, ok := sks.Annotations["autoscaling.knative.dev/class"]; ok && v == "hpa.autoscaling.knative.dev" {
+			sks.Status.MarkActivatorEndpointsRemoved()
+		} else {
+			sks.Status.MarkActivatorEndpointsPopulated()
+		}
 	} else {
 		sks.Status.MarkActivatorEndpointsRemoved()
 	}
