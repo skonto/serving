@@ -2,6 +2,8 @@
 
 root="$(dirname "${BASH_SOURCE[0]}")"
 
+export GOPATH=/tmp/go
+
 # shellcheck disable=SC1090
 source "$(dirname "$0")/../test/e2e-common.sh"
 source "$(dirname "$0")/release/resolve.sh"
