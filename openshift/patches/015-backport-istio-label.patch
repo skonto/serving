@@ -1,0 +1,16 @@
+diff --git a/vendor/knative.dev/pkg/test/crd.go b/vendor/knative.dev/pkg/test/crd.go
+--- a/vendor/knative.dev/pkg/test/crd.go	(revision d7619a7227b4f696e05deb55a3b3319742c11225)
++++ b/vendor/knative.dev/pkg/test/crd.go	(date 1727352218633)
+@@ -74,9 +74,9 @@
+ func NginxPod(namespace string) *corev1.Pod {
+ 	return &corev1.Pod{
+ 		ObjectMeta: metav1.ObjectMeta{
+-			Name:        nginxName,
+-			Namespace:   namespace,
+-			Annotations: map[string]string{"sidecar.istio.io/inject": "true"},
++			Name:      nginxName,
++			Namespace: namespace,
++			Labels:    map[string]string{"sidecar.istio.io/inject": "true"},
+ 		},
+ 		Spec: corev1.PodSpec{
+ 			Containers: []corev1.Container{
