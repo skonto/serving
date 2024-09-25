@@ -373,6 +373,9 @@ function run_e2e_tests(){
   # Revert gRPC patch.
   git apply -R ./openshift/patches/004-grpc.patch
 
+  # Temporary solution for the grpc-go client version 1.67.0
+  export GRPC_ENFORCE_ALPN_ENABLED=false
+
   # Run test with the prefix "TestGRPC".
   go_test_e2e -timeout=10m ./test/e2e -parallel=1 \
     -run "TestGRPC" \
