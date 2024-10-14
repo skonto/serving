@@ -26,3 +26,9 @@ knative.dev/serving/test/test_images/slowstart: registry.ci.openshift.org/opensh
 knative.dev/serving/test/test_images/timeout: registry.ci.openshift.org/openshift/knative-serving-test-timeout:knative-v1.15
 knative.dev/serving/test/test_images/volumes: registry.ci.openshift.org/openshift/knative-serving-test-volumes:knative-v1.15
 knative.dev/serving/test/test_images/wsserver: registry.ci.openshift.org/openshift/knative-serving-test-wsserver:knative-v1.15
+knative.dev/serving/test/performance/benchmarks/dataplane-probe: registry.ci.openshift.org/openshift/knative-serving-test-dataplane-probe:knative-v1.15
+knative.dev/serving/test/performance/benchmarks/load-test: registry.ci.openshift.org/openshift/knative-serving-test-load-test:knative-v1.15
+knative.dev/serving/test/performance/benchmarks/real-traffic-test: registry.ci.openshift.org/openshift/knative-serving-test-real-traffic-test:knative-v1.15
+knative.dev/serving/test/performance/benchmarks/reconciliation-delay: registry.ci.openshift.org/openshift/knative-serving-test-reconciliation-delay:knative-v1.15
+knative.dev/serving/test/performance/benchmarks/rollout-probe: registry.ci.openshift.org/openshift/knative-serving-test-rollout-probe:knative-v1.15
+knative.dev/serving/test/performance/benchmarks/scale-from-zero: registry.ci.openshift.org/openshift/knative-serving-test-scale-from-zero:knative-v1.15
