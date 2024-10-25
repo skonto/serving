@@ -19,6 +19,11 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/serving/pkg/reconciler/labeler"
+	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,6 +59,87 @@ import (
 	. "knative.dev/serving/pkg/reconciler/testing/v1"
 	. "knative.dev/serving/pkg/testing/v1"
 )
+
+func randomString(length int) string {
+	rand.Seed(time.Now().UnixNano())
+
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	result := make([]byte, length)
+
+	for i := range result {
+		result[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(result)
+}
+
+func TestDiffBad(t *testing.T) {
+	routeName := "helloworld-go"
+
+	routes := "r9kd8f3k0v,nvwixmvr9p,d4ud3faobx,fnakv7rajd,tb63yen1zf,cr5s6lkkx5,zsdqgte55r,v27i2txpz5"
+
+	//for _ = range 10 {
+	//	str := randomString(10)
+	//
+	//	if str != "" {
+	//		if routes == "" {
+	//			routes = str
+	//		} else {
+	//			routes = routes + "," + str
+	//		}
+	//	}
+	//}
+	ex := map[string]string{
+		"serving.knative.dev/routes": fmt.Sprintf("%s,helloworld-go", routes),
+	}
+	//set := labeler.GetListAnnValue(ex, serving.RoutesAnnotationKey)
+	//set.Insert(routeName)
+	anns := make(map[string]string)
+	//anns[serving.RoutesAnnotationKey] = strings.Join(set.UnsortedList(), ",")
+
+	l := ex[serving.RoutesAnnotationKey]
+	if l == "" {
+		l = routeName
+	} else if !strings.Contains(l, routeName) {
+		l = l + "," + routeName
+	}
+	anns[serving.RoutesAnnotationKey] = l
+	res := equality.Semantic.DeepEqual(anns, ex)
+	fmt.Printf("%v-%v-%v\n", anns, ex, res)
+	if res != false {
+		t.Errorf("Test failed")
+	}
+}
+
+func TestDiffGood(t *testing.T) {
+	routeName := "helloworld-go"
+
+	routes := "route-1,route-2"
+
+	//for _ = range 10 {
+	//	str := randomString(10)
+	//
+	//	if str != "" {
+	//		if routes == "" {
+	//			routes = str
+	//		} else {
+	//			routes = routes + "," + str
+	//		}
+	//	}
+	//}
+	ex := map[string]string{
+		"serving.knative.dev/routes": fmt.Sprintf("%s,helloworld-go", routes),
+	}
+	set := labeler.GetListAnnValue(ex, serving.RoutesAnnotationKey)
+	set.Insert(routeName)
+	anns := make(map[string]string)
+	anns[serving.RoutesAnnotationKey] = strings.Join(set.UnsortedList(), ",")
+	res := equality.Semantic.DeepEqual(anns, ex)
+	fmt.Printf("%v-%v-%v\n", anns, ex, res)
+	if res != true {
+		t.Errorf("Test failed")
+	}
+}
 
 func TestReconcile(t *testing.T) {
 	retryAttempted := false

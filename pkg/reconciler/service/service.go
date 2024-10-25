@@ -212,6 +212,7 @@ func configSemanticEquals(ctx context.Context, desiredConfig, config *v1.Configu
 	} else if specDiff != "" {
 		logger.Info("Reconciling configuration diff (-desired, +observed):\n", specDiff)
 	}
+	fmt.Printf("HERE 2: %v\n", equality.Semantic.DeepEqual(desiredConfig.Annotations, config.Annotations))
 	return equality.Semantic.DeepEqual(desiredConfig.Spec, config.Spec) &&
 		equality.Semantic.DeepEqual(desiredConfig.Labels, config.Labels) &&
 		equality.Semantic.DeepEqual(desiredConfig.Annotations, config.Annotations) &&

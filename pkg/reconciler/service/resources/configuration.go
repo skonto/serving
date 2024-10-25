@@ -17,6 +17,8 @@ limitations under the License.
 package resources
 
 import (
+	"fmt"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -49,6 +51,9 @@ func MakeConfigurationFromExisting(service *v1.Service, existing *v1.Configurati
 	set := labeler.GetListAnnValue(existing.Annotations, serving.RoutesAnnotationKey)
 	set.Insert(routeName)
 	anns[serving.RoutesAnnotationKey] = strings.Join(set.UnsortedList(), ",")
+
+	res := equality.Semantic.DeepEqual(anns, existing.Annotations)
+	fmt.Printf("HERE 1: %v-%v-%v\n", anns, existing.Annotations, res)
 
 	return &v1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
