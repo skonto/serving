@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"log"
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +48,7 @@ func (rts *RevisionTemplateSpec) SetDefaults(ctx context.Context) {
 // SetDefaults implements apis.Defaultable
 func (rs *RevisionSpec) SetDefaults(ctx context.Context) {
 	cfg := config.FromContextOrDefaults(ctx)
-
+	log.Printf("REVISION_DEFAULTS0: %v- PPPPPPPPPPPPP: %v\n", cfg.Defaults, *rs)
 	// Default TimeoutSeconds based on our configmap.
 	if rs.TimeoutSeconds == nil || *rs.TimeoutSeconds == 0 {
 		rs.TimeoutSeconds = ptr.Int64(cfg.Defaults.RevisionTimeoutSeconds)
@@ -64,7 +65,10 @@ func (rs *RevisionSpec) SetDefaults(ctx context.Context) {
 	// Default ResponseStartTimeoutSeconds only in case we have a non-zero default and the latter is not larger than the revision timeout.
 	// A zero default or a zero value set from the user or a nil value skips timer setup at the QP side.
 	if rs.ResponseStartTimeoutSeconds == nil {
+		log.Printf("REVISION_DEFAULTS1: %v\n", cfg.Defaults.RevisionResponseStartTimeoutSeconds)
+		log.Printf("REVISION_DEFAULTS2: %v\n", cfg.Defaults.RevisionTimeoutSeconds)
 		if cfg.Defaults.RevisionResponseStartTimeoutSeconds < *rs.TimeoutSeconds && cfg.Defaults.RevisionResponseStartTimeoutSeconds != 0 {
+			log.Printf("REVISION_DEFAULTS3: %v", *rs.TimeoutSeconds)
 			rs.ResponseStartTimeoutSeconds = ptr.Int64(cfg.Defaults.RevisionResponseStartTimeoutSeconds)
 		}
 	}

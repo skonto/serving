@@ -18,9 +18,12 @@ package v1
 
 import (
 	"context"
+	"log"
 
 	"knative.dev/pkg/apis"
+	// "knative.dev/serving/pkg/apis/config"
 	"knative.dev/serving/pkg/apis/serving"
+	// cconfig "knative.dev/serving/pkg/reconciler/configuration/config"
 )
 
 type configSpecKey struct{}
@@ -48,8 +51,15 @@ func (c *Configuration) SetDefaults(ctx context.Context) {
 		prevSpec = &prev.Spec
 		ctx = WithPreviousConfigurationSpec(ctx, prevSpec)
 	}
-
+	if c.Spec.Template.Spec.ResponseStartTimeoutSeconds != nil {
+		log.Printf("CONFIG_DEFAULTS1: %v\n", *c.Spec.Template.Spec.ResponseStartTimeoutSeconds)
+	}
+	log.Printf("CONFIG_DEFAULTS2:\n")
 	c.Spec.SetDefaults(apis.WithinSpec(ctx))
+	if c.Spec.Template.Spec.ResponseStartTimeoutSeconds != nil {
+		log.Printf("CONFIG_DEFAULTS3: %v\n", *c.Spec.Template.Spec.ResponseStartTimeoutSeconds)
+	}
+	log.Printf("CONFIG_DEFAULTS4:\n")
 
 	if c.GetOwnerReferences() == nil {
 		serving.SetUserInfo(ctx, prevSpec, &c.Spec, c)
@@ -67,5 +77,18 @@ func (cs *ConfigurationSpec) SetDefaults(ctx context.Context) {
 			return
 		}
 	}
+
+	//cfg := cconfig.FromContext(ctx)
+	//cf := config.Config{}
+	//if cfg != nil && cfg.Defaults != nil {
+	//	cf.Defaults = cfg.Defaults.DeepCopy()
+	//}
+	//if cfg != nil && cfg.Features != nil {
+	//	cf.Features = cfg.Features.DeepCopy()
+	//}
+	//if cfg != nil {
+	//	ctx = config.ToContext(ctx, &cf)
+	//}
+
 	cs.Template.SetDefaults(ctx)
 }

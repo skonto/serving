@@ -19,6 +19,7 @@ package configuration
 import (
 	"context"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 
@@ -301,12 +302,16 @@ func (c *Reconciler) createRevision(ctx context.Context, config *v1.Configuratio
 	logger := logging.FromContext(ctx)
 
 	rev := resources.MakeRevision(ctx, config, c.clock.Now())
+	log.Printf("createRevision 0: %v", rev)
+	if rev.Spec.ResponseStartTimeoutSeconds != nil {
+		log.Printf("createRevision 1 rst: %v", *rev.Spec.ResponseStartTimeoutSeconds)
+	}
 	created, err := c.client.ServingV1().Revisions(config.Namespace).Create(ctx, rev, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 	controller.GetEventRecorder(ctx).Eventf(config, corev1.EventTypeNormal, "Created", "Created Revision %q", created.Name)
-	logger.Infof("Created Revision: %#v", created)
-
+	logger.Infof("createRevision 2: %#v", created)
+	logger.Infof("createRevision 3 with spec timeout: %#v", *created.Spec.ResponseStartTimeoutSeconds)
 	return created, nil
 }
