@@ -711,9 +711,11 @@ func SecurityContextMask(ctx context.Context, in *corev1.SecurityContext) *corev
 	// "RuntimeDefault" or "Localhost" (with localhost path set)
 	out.SeccompProfile = in.SeccompProfile
 
+	if in.Privileged != nil && !*in.Privileged {
+		out.Privileged = in.Privileged
+	}
 	// Disallowed
 	// This list is unnecessary, but added here for clarity
-	out.Privileged = nil
 	out.SELinuxOptions = nil
 	out.ProcMount = nil
 

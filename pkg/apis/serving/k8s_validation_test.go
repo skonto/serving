@@ -2699,10 +2699,29 @@ func getCommonContainerValidationTestCases() []containerValidationTestCase {
 			c: corev1.Container{
 				Image: "foo",
 				SecurityContext: &corev1.SecurityContext{
+					SELinuxOptions: &corev1.SELinuxOptions{},
+				},
+			},
+			want: apis.ErrDisallowedFields("securityContext.seLinuxOptions"),
+		}, {
+			name: "with Privileged = True",
+			c: corev1.Container{
+				Image: "foo",
+				SecurityContext: &corev1.SecurityContext{
 					Privileged: ptr.Bool(true),
 				},
 			},
 			want: apis.ErrDisallowedFields("securityContext.privileged"),
+		}, {
+			name: "with Privileged (ok)",
+			c: corev1.Container{
+				Image: "foo",
+				SecurityContext: &corev1.SecurityContext{
+					Privileged: ptr.Bool(false),
+				},
+			},
+			cfgOpts: []configOption{withPodSpecSecurityContextEnabled()},
+			want:    nil,
 		}, {
 			name: "too large uid",
 			c: corev1.Container{
