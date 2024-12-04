@@ -2720,8 +2720,7 @@ func getCommonContainerValidationTestCases() []containerValidationTestCase {
 					Privileged: ptr.Bool(false),
 				},
 			},
-			cfgOpts: []configOption{withPodSpecSecurityContextEnabled()},
-			want:    nil,
+			want: nil,
 		}, {
 			name: "too large uid",
 			c: corev1.Container{
