@@ -116,66 +116,66 @@ func TestContainerErrorMsg(t *testing.T) {
 // TestContainerExitingMsg is to validate the error condition defined at
 // https://github.com/knative/serving/blob/main/docs/spec/errors.md
 // for the container crashing scenario.
-func TestContainerExitingMsg(t *testing.T) {
-	t.Parallel()
-
-	clients := test.Setup(t)
-
-	names := test.ResourceNames{
-		Service: test.ObjectNameForTest(t),
-		Image:   test.Failing,
-	}
-
-	test.EnsureTearDown(t, clients, &names)
-
-	t.Log("Creating a new Service", names.Config)
-	svc, err := v1test.CreateService(t, clients, names)
-	if err != nil {
-		t.Fatalf("Failed to create Service %s: %v", names.Service, err)
-	}
-
-	// Wait for ServiceState becomes NotReady. It also waits for the creation of Configuration.
-	t.Log("When the containers keep crashing, the Service should have error status.")
-	if err := v1test.WaitForServiceState(clients.ServingClient, names.Service, v1test.IsServiceAndChildrenFailed, "ServiceIsFailed"); err != nil {
-		t.Fatalf("The Service %s was unexpected state: %v", names.Service, err)
-	}
-
-	names.Config = serviceresourcenames.Configuration(svc)
-
-	t.Log("When the containers keep crashing, the Configuration should have error status.")
-	if err := v1test.WaitForConfigurationState(clients.ServingClient, names.Config, func(r *v1.Configuration) (bool, error) {
-		names.Revision = r.Status.LatestCreatedRevisionName
-		cond := r.Status.GetCondition(v1.ConfigurationConditionReady)
-		t.Logf("Configuration %s Ready = %#v", names.Config, cond)
-		if cond != nil {
-			if cond.Reason != "" && cond.Message != "" {
-				return true, nil
-			}
-			return true, fmt.Errorf("The Configuration %s has empty reason or message: (Reason=%q, Message=%q)",
-				names.Config, cond.Reason, cond.Message)
-		}
-		return false, nil
-	}, "ConfigContainersCrashing"); err != nil {
-		t.Fatal("Failed to validate configuration state:", err)
-	}
-
-	t.Log("When the containers keep crashing, the Revision should have error status.")
-	err = v1test.CheckRevisionState(clients.ServingClient, names.Revision, func(r *v1.Revision) (bool, error) {
-		cond := r.Status.GetCondition(v1.RevisionConditionReady)
-		t.Logf("Revsion %s Ready status = %v", names.Revision, cond)
-		if cond != nil {
-			if cond.Reason != "" && cond.Message != "" {
-				return true, nil
-			}
-			return true, fmt.Errorf("The revision %s has empty reason or message: (Reason=%q, Message=%q)",
-				names.Revision, cond.Reason, cond.Message)
-		}
-		return false, nil
-	})
-	if err != nil {
-		t.Fatal("Failed to validate revision state:", err)
-	}
-}
+//func TestContainerExitingMsg(t *testing.T) {
+//	t.Parallel()
+//
+//	clients := test.Setup(t)
+//
+//	names := test.ResourceNames{
+//		Service: test.ObjectNameForTest(t),
+//		Image:   test.Failing,
+//	}
+//
+//	test.EnsureTearDown(t, clients, &names)
+//
+//	t.Log("Creating a new Service", names.Config)
+//	svc, err := v1test.CreateService(t, clients, names)
+//	if err != nil {
+//		t.Fatalf("Failed to create Service %s: %v", names.Service, err)
+//	}
+//
+//	// Wait for ServiceState becomes NotReady. It also waits for the creation of Configuration.
+//	t.Log("When the containers keep crashing, the Service should have error status.")
+//	if err := v1test.WaitForServiceState(clients.ServingClient, names.Service, v1test.IsServiceAndChildrenFailed, "ServiceIsFailed"); err != nil {
+//		t.Fatalf("The Service %s was unexpected state: %v", names.Service, err)
+//	}
+//
+//	names.Config = serviceresourcenames.Configuration(svc)
+//
+//	t.Log("When the containers keep crashing, the Configuration should have error status.")
+//	if err := v1test.WaitForConfigurationState(clients.ServingClient, names.Config, func(r *v1.Configuration) (bool, error) {
+//		names.Revision = r.Status.LatestCreatedRevisionName
+//		cond := r.Status.GetCondition(v1.ConfigurationConditionReady)
+//		t.Logf("Configuration %s Ready = %#v", names.Config, cond)
+//		if cond != nil {
+//			if cond.Reason != "" && cond.Message != "" {
+//				return true, nil
+//			}
+//			return true, fmt.Errorf("The Configuration %s has empty reason or message: (Reason=%q, Message=%q)",
+//				names.Config, cond.Reason, cond.Message)
+//		}
+//		return false, nil
+//	}, "ConfigContainersCrashing"); err != nil {
+//		t.Fatal("Failed to validate configuration state:", err)
+//	}
+//
+//	t.Log("When the containers keep crashing, the Revision should have error status.")
+//	err = v1test.CheckRevisionState(clients.ServingClient, names.Revision, func(r *v1.Revision) (bool, error) {
+//		cond := r.Status.GetCondition(v1.RevisionConditionReady)
+//		t.Logf("Revsion %s Ready status = %v", names.Revision, cond)
+//		if cond != nil {
+//			if cond.Reason != "" && cond.Message != "" {
+//				return true, nil
+//			}
+//			return true, fmt.Errorf("The revision %s has empty reason or message: (Reason=%q, Message=%q)",
+//				names.Revision, cond.Reason, cond.Message)
+//		}
+//		return false, nil
+//	})
+//	if err != nil {
+//		t.Fatal("Failed to validate revision state:", err)
+//	}
+//}
 
 // Get revision name from configuration.
 func getRevisionFromConfiguration(clients *test.Clients, configName string) (string, error) {

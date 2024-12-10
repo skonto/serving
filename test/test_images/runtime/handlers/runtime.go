@@ -56,6 +56,7 @@ func runtimeHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	log.Printf("Runtime Info: %+v", k)
 	writeJSON(w, k)
 }
 

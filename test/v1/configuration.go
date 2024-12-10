@@ -19,6 +19,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -113,6 +114,15 @@ func ConfigurationSpec(imagePath string) *v1.ConfigurationSpec {
 				PodSpec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Image: imagePath,
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("30m"),
+								corev1.ResourceMemory: resource.MustParse("20Mi"),
+							},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("300m"),
+							},
+						},
 					}},
 				},
 			},

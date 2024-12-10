@@ -727,6 +727,14 @@ func TestServiceCreateWithMultipleContainers(t *testing.T) {
 		Image: pkgtest.ImagePath(names.Sidecars[0]),
 	}}
 
+	for i, c := range containers {
+		c.Resources = corev1.ResourceRequirements{Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("30m"),
+			corev1.ResourceMemory: resource.MustParse("20Mi"),
+		}}
+		containers[i] = c
+	}
+
 	// Please see the comment in test/v1/configuration.go.
 	if !test.ServingFlags.DisableOptionalAPI {
 		for _, c := range containers {

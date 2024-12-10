@@ -126,6 +126,7 @@ func createResources() corev1.ResourceRequirements {
 			corev1.ResourceMemory: resource.MustParse("350Mi"),
 		},
 		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("30m"),
 			corev1.ResourceMemory: resource.MustParse("350Mi"),
 		},
 	}

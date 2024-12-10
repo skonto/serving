@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -243,6 +244,15 @@ func Service(names test.ResourceNames, fopt ...rtesting.ServiceOption) *v1.Servi
 	if names.Image != "" && len(names.Sidecars) == 0 {
 		a := append([]rtesting.ServiceOption{
 			rtesting.WithConfigSpec(ConfigurationSpec(pkgTest.ImagePath(names.Image))),
+			rtesting.WithResourceRequirements(corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("30m"),
+					corev1.ResourceMemory: resource.MustParse("20Mi"),
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU: resource.MustParse("300m"),
+				},
+			}),
 		}, fopt...)
 		return rtesting.ServiceWithoutNamespace(names.Service, a...)
 	}
