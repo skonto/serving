@@ -23,15 +23,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"knative.dev/serving/pkg/apis/autoscaling"
+	v1 "knative.dev/serving/pkg/apis/serving/v1"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	pkgtest "knative.dev/pkg/test"
+	"knative.dev/pkg/test/logstream"
 	"knative.dev/pkg/test/spoof"
 	v1opts "knative.dev/serving/pkg/testing/v1"
 	"knative.dev/serving/test"
@@ -110,16 +116,24 @@ func TestProbeRuntime(t *testing.T) {
 
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
+				// hack for this test only
+				if test.ServingFlags.DisableLogStream {
+					cancel := logstream.Start(t)
+					defer cancel()
+				}
 				names := test.ResourceNames{
 					Service: test.ObjectNameForTest(t),
 					Image:   test.Readiness,
 				}
 
-				test.EnsureTearDown(t, clients, &names)
+				// test.EnsureTearDown(t, clients, &names)
 
 				t.Log("Creating a new Service")
+				envs := tc.env
+				envs = append(tc.env, corev1.EnvVar{Name: "GODEBUG", Value: "http2debug=2"})
 				resources, err := v1test.CreateServiceReady(t, clients, &names,
-					v1opts.WithEnv(tc.env...),
+					withMinScale(1),
+					v1opts.WithEnv(envs...),
 					v1opts.WithReadinessProbe(
 						&corev1.Probe{
 							ProbeHandler:  tc.handler,
@@ -143,10 +157,65 @@ func TestProbeRuntime(t *testing.T) {
 					test.AddRootCAtoTransport(context.Background(), t.Logf, clients, test.ServingFlags.HTTPS),
 					spoof.WithHeader(test.ServingFlags.RequestHeader()),
 				); err != nil {
-					t.Fatalf("The endpoint for Route %s at %s didn't return success: %v", names.Route, url, err)
+					pods, err := clients.KubeClient.CoreV1().Pods(resources.Service.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err == nil {
+						for _, p := range pods.Items {
+							if strings.HasPrefix(p.Name, resources.Service.Name) {
+								t.Logf("Pod %s is %s", p.Name, p.Status.Phase)
+								if err := clients.KubeClient.CoreV1().Pods(resources.Service.Namespace).Delete(context.Background(), p.Name, metav1.DeleteOptions{}); err != nil {
+									t.Logf("failed to delete pod %s: %v", p.Name, err)
+								}
+							}
+						}
+					}
+					s, err := clients.KubeClient.CoreV1().Secrets(resources.Service.Namespace).Get(context.Background(), "serving-certs", metav1.GetOptions{})
+
+					if err == nil {
+						t.Logf("Secret serving-certs: %v", s.Data)
+					}
+
+					events, err := clients.KubeClient.CoreV1().Events(resources.Service.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err == nil {
+						t.Logf("Events: %v", events.Items)
+					}
+
+					endpoints, err := clients.KubeClient.CoreV1().Endpoints(resources.Service.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err == nil {
+						for _, e := range endpoints.Items {
+							if strings.HasPrefix(e.Name, resources.Service.Name) {
+								t.Logf("Endpoind %s is %v", e.Name, e)
+							}
+						}
+					}
+
+					time.Sleep(45 * time.Second)
+
+					if _, err = pkgtest.CheckEndpointState(
+						context.Background(),
+						clients.KubeClient,
+						t.Logf,
+						url,
+						spoof.MatchesAllOf(spoof.IsStatusOK, spoof.MatchesBody(test.HelloWorldText)),
+						"readinessIsReady",
+						test.ServingFlags.ResolvableDomain,
+						test.AddRootCAtoTransport(context.Background(), t.Logf, clients, test.ServingFlags.HTTPS),
+						spoof.WithHeader(test.ServingFlags.RequestHeader()),
+					); err != nil {
+						t.Fatalf("The endpoint for Route %s at %s didn't return success: %v", names.Route, url, err)
+					}
+
 				}
 			})
 		}
+	}
+}
+
+func withMinScale(minScale int) func(cfg *v1.Service) {
+	return func(cfg *v1.Service) {
+		if cfg.Spec.Template.Annotations == nil {
+			cfg.Spec.Template.Annotations = make(map[string]string, 1)
+		}
+		cfg.Spec.Template.Annotations[autoscaling.MinScaleAnnotationKey] = strconv.Itoa(minScale)
 	}
 }
 
