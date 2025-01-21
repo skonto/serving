@@ -220,6 +220,11 @@ jobs:
           --ingress-class=${{ matrix.ingress-class || matrix.ingress }}.ingress.networking.knative.dev \
           ${{ matrix.test-flags }}
 
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
     - uses: chainguard-dev/actions/kind-diag@141bf225e9c19c34304ee9d06e9be9c44a6d8765 # main
       # Only upload logs on failure.
       if: ${{ failure() }}
