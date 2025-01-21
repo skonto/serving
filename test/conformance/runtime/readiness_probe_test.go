@@ -134,6 +134,7 @@ func TestProbeRuntime(t *testing.T) {
 				resources, err := v1test.CreateServiceReady(t, clients, &names,
 					withMinScale(1),
 					v1opts.WithEnv(envs...),
+					v1opts.WithConfigAnnotations(map[string]string{"autoscaling.knative.dev/target-burst-capacity": "0"}),
 					v1opts.WithReadinessProbe(
 						&corev1.Probe{
 							ProbeHandler:  tc.handler,
