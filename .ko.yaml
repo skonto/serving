@@ -1,4 +1,4 @@
 # Use :nonroot base image for all containers
-defaultBaseImage: ubuntu:latest
+defaultBaseImage: skonto/ubuntu:latest
 baseImageOverrides:
   github.com/tsenart/vegeta/v12: ubuntu:latest
