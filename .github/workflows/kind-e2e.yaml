@@ -90,7 +90,7 @@ jobs:
 
         test-suite:
         - runtime
-        
+
         include:
 #        - ingress: gateway_istio
 #          ingress-class: gateway-api
@@ -136,7 +136,6 @@ jobs:
     env:
       KIND: 1
       INGRESS_CLASS: ${{ matrix.ingress-class || matrix.ingress }}.ingress.networking.knative.dev
-      GATEWAY_API_IMPLEMENTATION: ${{ matrix.gateway-api-implementation }}
       ENABLE_TLS: ${{ matrix.enable-tls || 0 }}
       # Disabled due to flakiness: https://github.com/knative/serving/issues/14637
       # AMBIENT: ${{ matrix.ambient || 0 }}
@@ -207,8 +206,7 @@ jobs:
           -skip-cleanup-on-fail \
           -disable-logstream \
           -enable-alpha -enable-beta \
-          --ingress-class=${{ matrix.ingress-class || matrix.ingress }}.ingress.networking.knative.dev \
-          ${{ matrix.test-flags }}
+          --ingress-class=${{ matrix.ingress-class || matrix.ingress }}.ingress.networking.knative.dev
 
     - uses: mxschmitt/action-tmate@v3
       if: ${{ failure() }}
@@ -220,5 +218,5 @@ jobs:
       if: ${{ failure() }}
       with:
         cluster-resources: nodes,namespaces,crds
-        namespace-resources: configmaps,pods,svc,ksvc,route,configuration,revision,king,${{ matrix.namespace-resources || '' }}
+        namespace-resources: configmaps,pods,svc,ksvc,route,configuration,revision,king
         artifact-name: logs-${{ matrix.k8s-version}}-${{ matrix.ingress }}-${{ matrix.test-suite }}
