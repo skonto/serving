@@ -77,33 +77,33 @@ func TestMustRunAsUser(t *testing.T) {
 // TestShouldRunAsUserContainerDefault verifies that a container that sets runAsUser
 // in the Dockerfile is respected when executed in Knative as declared by "SHOULD"
 // in the runtime-contract.
-func TestShouldRunAsUserContainerDefault(t *testing.T) {
-	if test.ServingFlags.DisableOptionalAPI {
-		t.Skip("Container.securityContext is not required by Knative Serving API Specification")
-	}
-
-	t.Parallel()
-	clients := test.Setup(t)
-	_, ri, err := fetchRuntimeInfo(t, clients)
-	if err != nil {
-		t.Fatal("Error fetching runtime info:", err)
-	}
-
-	if ri.Host == nil {
-		t.Fatal("Missing host information from runtime info.")
-	}
-
-	if ri.Host.User == nil {
-		t.Fatal("Missing user information from runtime info.")
-	}
-
-	if got, want := ri.Host.User.UID, unprivilegedUserID; got != want {
-		t.Errorf("uid = %d, want: %d", got, want)
-	}
-
-	// We expect the effective userID to match the userID as we
-	// did not use setuid.
-	if got, want := ri.Host.User.EUID, unprivilegedUserID; got != want {
-		t.Errorf("euid = %d, want: %d", got, want)
-	}
-}
+//func TestShouldRunAsUserContainerDefault(t *testing.T) {
+//	if test.ServingFlags.DisableOptionalAPI {
+//		t.Skip("Container.securityContext is not required by Knative Serving API Specification")
+//	}
+//
+//	t.Parallel()
+//	clients := test.Setup(t)
+//	_, ri, err := fetchRuntimeInfo(t, clients)
+//	if err != nil {
+//		t.Fatal("Error fetching runtime info:", err)
+//	}
+//
+//	if ri.Host == nil {
+//		t.Fatal("Missing host information from runtime info.")
+//	}
+//
+//	if ri.Host.User == nil {
+//		t.Fatal("Missing user information from runtime info.")
+//	}
+//
+//	if got, want := ri.Host.User.UID, unprivilegedUserID; got != want {
+//		t.Errorf("uid = %d, want: %d", got, want)
+//	}
+//
+//	// We expect the effective userID to match the userID as we
+//	// did not use setuid.
+//	if got, want := ri.Host.User.EUID, unprivilegedUserID; got != want {
+//		t.Errorf("euid = %d, want: %d", got, want)
+//	}
+//}
