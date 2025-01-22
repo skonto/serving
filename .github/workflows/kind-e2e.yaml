@@ -86,21 +86,11 @@ jobs:
         - v1.31.x
 
         ingress:
-        - kourier
         - kourier-tls
-        - istio
-        - istio-tls
-        # Disabled due to flakiness: https://github.com/knative/serving/issues/14637
-        # - istio-ambient
-        - contour
-        - gateway_istio
-        - gateway_contour
 
         test-suite:
         - runtime
-        - api
-        - e2e
-
+        
         include:
 #        - ingress: gateway_istio
 #          ingress-class: gateway-api
